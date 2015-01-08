@@ -25,6 +25,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func errorer(w http.ResponseWriter, r *http.Request) {
+        w.WriteHeader(404)
 	fmt.Fprintf(w, `<html><head><style>
           p {font-size: xx-large}
           span.time {color: red}
@@ -38,11 +39,12 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	port := flag.Int("port", 8080, "Set the server port, default port: 8080")
+	//version := flag.Int("V", 1, "shows the version?")
 	//var port = flag.Int("port", 8080, "Set the server port, default port: 8080")
 	flag.Parse()
 	http.HandleFunc("/time", handler)
 	http.HandleFunc("/", errorer)
 	var portString = fmt.Sprintf(":%d", *port)
 	err := http.ListenAndServe(portString, nil)
-	fmt.Println("Server Failed: %s\n", err)
+	fmt.Printf("Server Failed: %s\n", err)
 }

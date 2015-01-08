@@ -16,6 +16,7 @@ HOME="/usr/apps/go/hg/"
 GOHOME=$(HOME)
 GOPATH=$(CURDIR)
 GOROOT="/usr/apps/go/hg/bin/go"
+
 ifdef BREW
 	GOROOT="go"
 endif

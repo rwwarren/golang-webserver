@@ -4,19 +4,21 @@
 
   Usage: make [options] [variables]
 
-  Examples: make
-            make all
-            make run
+  Examples:   make
+              make all
+              make run
 
   Options:
-    help
-    all
-    print
-    install
-    run
+    help      Displays this, the help message
+    all       Print, install, then run
+    print     Prints the GOROOT
+    install   Runs "go build" to compile the go program
+    run       Runs the compiled go build
 
   Variables:
-    BREW
-    GOROOT
+    BREW      Set to anything if go is set up properaly in the $PATH
+    GOROOT    If unset, then GOROOT will default to "/usr/apps/go/hg/bin/go"
+              otherwise set it to the location where go is installed
+    PORT      Set the port for the server to run on
 
 
