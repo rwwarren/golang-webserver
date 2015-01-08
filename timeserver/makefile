@@ -12,13 +12,13 @@
 	#$(TESTT)
 #all: fmt install run
 
-HOME="/usr/apps/go/hg/"
+GOROOT="/usr/apps/go/hg/"
 GOHOME=$(HOME)
 GOPATH=$(CURDIR)
-GOROOT="/usr/apps/go/hg/bin/go"
+GOLOC="/usr/apps/go/hg/bin/go"
 
 ifdef BREW
-	GOROOT="go"
+	GOLOC="go"
 endif
 
 all: print install run
@@ -28,14 +28,15 @@ help:
 
 print:
 	@echo "GOROOT: " $(GOROOT)
+	@echo "GOLOC: " $(GOLOC)
 
 fmt:
 	@echo "go fmt"
-	@$(GOROOT) fmt
+	@$(GOLOC) fmt
 
 install:
 	@echo "go build"
-	@$(GOROOT) build
+	@$(GOLOC) build
 
 run:
 	@echo -n "Server location: "
