@@ -1,0 +1,4 @@
+# ignore swp and complied code and documents
+*.swp
+*.docx
+
