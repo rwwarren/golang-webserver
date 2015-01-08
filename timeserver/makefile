@@ -12,7 +12,6 @@
 	#$(TESTT)
 #all: fmt install run
 
-IPADDR=SHELL("ifconfig  | grep -A 2 \"eth0\" | grep \"inet addr\" | cut -d: -f2 | awk '{ print $$1}'")
 HOME="/usr/apps/go/hg/"
 GOHOME=$(HOME)
 GOPATH=$(CURDIR)
@@ -22,6 +21,9 @@ ifdef BREW
 endif
 
 all: print install run
+
+help:
+	@cat readme.txt
 
 print:
 	@echo "GOROOT: " $(GOROOT)
@@ -36,13 +38,13 @@ install:
 
 run:
 	@echo -n "Server location: "
-	@ifconfig | grep -A 2 "eth0" | grep "inet addr" | cut -d: -f2 | awk '{ printf $$1}'
+	- @ifconfig | grep -A 2 "eth0" | grep "inet addr" | cut -d: -f2 | awk '{ printf $$1}'
 
 ifndef PORT
 	@echo ":8080"
 	- ./timeserver
 else
 	@echo ":"$(PORT)
-	./timeserver --port $(PORT)
+	- ./timeserver --port $(PORT)
 endif
 
