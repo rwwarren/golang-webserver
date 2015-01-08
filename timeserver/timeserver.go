@@ -1,3 +1,7 @@
+//Testing
+// find out how to see this
+//
+//
 package main
 
 import (
@@ -33,7 +37,8 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	var port = flag.Int("port", 8080, "help message for flagname")
+	port := flag.Int("port", 8080, "help message for flagname")
+	//var port = flag.Int("port", 8080, "help message for flagname")
 	flag.Parse()
 	http.HandleFunc("/time", handler)
 	http.HandleFunc("/", errorer)
