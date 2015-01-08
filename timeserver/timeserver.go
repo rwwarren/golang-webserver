@@ -1,14 +1,15 @@
 package main
 
 import (
-    "fmt"
-    "net/http"
-    "time"
-    "flag"
+	"flag"
+	"fmt"
+	"net/http"
+	"time"
 )
+
 func handler(w http.ResponseWriter, r *http.Request) {
-      const layout = "3:04:05 PM"
-      fmt.Fprintf(w, `<html><head><style>
+	const layout = "3:04:05 PM"
+	fmt.Fprintf(w, `<html><head><style>
           p {font-size: xx-large}
           span.time {color: red}
           </style>
@@ -20,7 +21,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func errorer(w http.ResponseWriter, r *http.Request) {
-      fmt.Fprintf(w, `<html><head><style>
+	fmt.Fprintf(w, `<html><head><style>
           p {font-size: xx-large}
           span.time {color: red}
           </style>
@@ -32,13 +33,12 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-    var port = flag.Int("port", 8080, "help message for flagname")
-    flag.Parse()
-    http.HandleFunc("/time", handler)
-    http.HandleFunc("/", errorer)
-    var portString = fmt.Sprintf(":%d", *port)
-    fmt.Printf("port string is: %s", portString)
-    err:= http.ListenAndServe(portString, nil)
-    fmt.Println("Server Failed: %s\n", err)
+	var port = flag.Int("port", 8080, "help message for flagname")
+	flag.Parse()
+	http.HandleFunc("/time", handler)
+	http.HandleFunc("/", errorer)
+	var portString = fmt.Sprintf(":%d", *port)
+	fmt.Printf("port string is: %s", portString)
+	err := http.ListenAndServe(portString, nil)
+	fmt.Println("Server Failed: %s\n", err)
 }
-
