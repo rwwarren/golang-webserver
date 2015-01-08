@@ -9,21 +9,40 @@
 # build:
 # 	$(GO) build
 # 	godoc -v --http=$(PORT) --index=true
+	#$(TESTT)
+#all: fmt install run
 
+IPADDR=SHELL("ifconfig  | grep -A 2 \"eth0\" | grep \"inet addr\" | cut -d: -f2 | awk '{ print $$1}'")
 HOME="/usr/apps/go/hg/"
 GOHOME=$(HOME)
 GOPATH=$(CURDIR)
+GOROOT="/usr/apps/go/hg/bin/go"
+ifdef BREW
+	GOROOT="go"
+endif
 
-all: fmt install
+all: print install run
+
+print:
+	@echo "GOROOT: " $(GOROOT)
 
 fmt:
-	go fmt
+	@echo "go fmt"
+	@$(GOROOT) fmt
+
 install:
-#run:
-	echo $(PORT)
-	go build
+	@echo "go build"
+	@$(GOROOT) build
+
+run:
+	@echo -n "Server location: "
+	@ifconfig | grep -A 2 "eth0" | grep "inet addr" | cut -d: -f2 | awk '{ printf $$1}'
+
 ifndef PORT
-	./timeserver
+	@echo ":8080"
+	- ./timeserver
 else
+	@echo ":"$(PORT)
 	./timeserver --port $(PORT)
 endif
+
