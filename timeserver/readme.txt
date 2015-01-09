@@ -23,5 +23,6 @@
     GOROOT    If unset, then GOROOT will default to "/usr/apps/go/hg/"
               otherwise set it to the location where go is installed
     PORT      Set the port for the server to run on
+    V         Will display the server version and quit
 
 

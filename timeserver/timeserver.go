@@ -40,7 +40,6 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 func main() {
 	port := flag.Int("port", 8080, "Set the server port, default port: 8080")
 	version := flag.Bool("V", false, "shows the version?")
-	//var port = flag.Int("port", 8080, "Set the server port, default port: 8080")
 	flag.Parse()
         if(*version){
 	  fmt.Println("Assignment Version: 1")
