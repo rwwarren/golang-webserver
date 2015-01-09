@@ -41,12 +41,16 @@ install:
 run:
 	@echo -n "Server location: "
 	- @ifconfig | grep -A 2 "eth0" | grep "inet addr" | cut -d: -f2 | awk '{ printf $$1}'
-
-ifndef PORT
+ifdef V
+	./timeserver -V
+else
+  ifndef PORT
 	@echo ":8080"
 	- ./timeserver
-else
+  else
 	@echo ":"$(PORT)
 	- ./timeserver --port $(PORT)
+  endif
+
 endif
 
