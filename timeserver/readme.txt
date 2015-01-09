@@ -6,7 +6,9 @@
 
   Examples:   make
               make all
-              make run
+              make run PORT=3030
+              make run V=1
+              make run BREW=1
 
   Options:
     help      Displays this, the help message
