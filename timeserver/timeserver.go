@@ -1,7 +1,17 @@
-//Testing
-// find out how to see this
+// Timeserver
 //
+// This is a timeserver that shows the time for the current timezone
+// Hours, Minutes, and Seconds on the "/time" url.
+// All other urls will return with a 404.
 //
+// Building and running with go can be done with "go build"
+// then "./timeserver". This will show up on port 8080 by default.
+// If the port is in use there will be an error.
+//
+// There are command line options.
+// "--port PORT_NUMBER" will change the port.
+// "-V" will show the version and then quit.
+
 package main
 
 import (
@@ -11,6 +21,8 @@ import (
 	"time"
 )
 
+// Handles the timeserver which shows the current time
+// for the local timezone
 func handler(w http.ResponseWriter, r *http.Request) {
 	const layout = "3:04:05 PM"
 	fmt.Fprintf(w, `<html><head><style>
@@ -24,6 +36,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
           </html>`, time.Now().Local().Format(layout))
 }
 
+// Handles errors for when the page is not found
 func errorer(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(404)
 	fmt.Fprintf(w, `<html><head><style>
@@ -37,14 +50,15 @@ func errorer(w http.ResponseWriter, r *http.Request) {
           </html>`)
 }
 
+// Main handler that runs the server on the port or shows the version of the server
 func main() {
 	port := flag.Int("port", 8080, "Set the server port, default port: 8080")
-	version := flag.Bool("V", false, "shows the version?")
+	version := flag.Bool("V", false, "Shows the version of the timeserver")
 	flag.Parse()
-        if(*version){
-	  fmt.Println("Assignment Version: 1")
-          return
-        }
+	if *version {
+		fmt.Println("Assignment Version: 1")
+		return
+	}
 	http.HandleFunc("/time", handler)
 	http.HandleFunc("/", errorer)
 	var portString = fmt.Sprintf(":%d", *port)

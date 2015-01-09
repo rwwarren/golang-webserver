@@ -1,20 +1,11 @@
-
-# Fix this and add port
-# Make a little more robust
-# GO ?= go
-# GOPATH := $(CURDIR)/_vendor:$(GOPATH)
-#
-# all: build
-#
-# build:
-# 	$(GO) build
-# 	godoc -v --http=$(PORT) --index=true
-	#$(TESTT)
-#all: fmt install run
+# Make file for timesrver assignment
+# This can get "help", "print", "fmt",
+# "install", "run"
+# GOLOC is the location of the go executable
+# This also takes PORT for the port
+# Lastly will take V for version
 
 GOROOT="/usr/apps/go/hg/"
-GOHOME=$(HOME)
-GOPATH=$(CURDIR)
 GOLOC="/usr/apps/go/hg/bin/go"
 
 ifdef BREW
@@ -51,6 +42,5 @@ else
 	@echo ":"$(PORT)
 	- ./timeserver --port $(PORT)
   endif
-
 endif
 
