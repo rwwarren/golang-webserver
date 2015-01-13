@@ -1,3 +1,4 @@
+// (C) Ryan Warren 2015
 // Timeserver
 //
 // This is a timeserver that shows the time for the current timezone
