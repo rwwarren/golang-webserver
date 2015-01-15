@@ -20,11 +20,12 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+        //"os/exec"
 )
 
 // Handles the timeserver which shows the current time
 // for the local timezone
-func handler(w http.ResponseWriter, r *http.Request) {
+func timeHandler(w http.ResponseWriter, r *http.Request) {
 	const layout = "3:04:05 PM"
 	fmt.Fprintf(w, `<html><head><style>
           p {font-size: xx-large}
@@ -51,6 +52,33 @@ func errorer(w http.ResponseWriter, r *http.Request) {
           </html>`)
 }
 
+func loginForm(w http.ResponseWriter, r *http.Request) {
+        //cookie := http.Cookie{"test", "tcookie", "/", "www.sliceone.com", expire, expire.Format(time.UnixDate), 86400, true, true, "test=tcookie", []string{"test=tcookie"}}
+        cookie := &http.Cookie{Name:"name", Value:"ryan", Expires:time.Now().Add(356*24*time.Hour), HttpOnly:true}
+        //r.AddCookie(&cookie)
+        http.SetCookie(w, cookie)
+	fmt.Fprintf(w, `<html>
+          <body>
+          <form action="login">
+            What is your name, Earthling?
+            <input type="text" name="name" size="50">
+            <input type="submit">
+          </form>
+          </p>
+          </body>
+          </html>`)
+}
+
+func logoutPage(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, `<html>
+          <head>
+          <META http-equiv="refresh" content="10;URL=/">
+          <body>
+          <p>Good-bye.</p>
+          </body>
+          </html>`)
+}
+
 // Main handler that runs the server on the port or shows the version of the server
 func main() {
 	port := flag.Int("port", 8080, "Set the server port, default port: 8080")
@@ -60,8 +88,10 @@ func main() {
 		fmt.Println("Assignment Version: 1")
 		return
 	}
-	http.HandleFunc("/time", handler)
-	http.HandleFunc("/", errorer)
+	http.HandleFunc("/time", timeHandler)
+	http.HandleFunc("/", loginForm)
+	http.HandleFunc("/logout", logoutPage)
+	//http.HandleFunc("/", errorer)
 	var portString = fmt.Sprintf(":%d", *port)
 	err := http.ListenAndServe(portString, nil)
 	fmt.Printf("Server Failed: %s\n", err)
