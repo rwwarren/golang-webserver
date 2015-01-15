@@ -21,7 +21,9 @@ import (
 	"net/http"
 	"time"
         //"os/exec"
+        //"sync"
         "log"
+        //TODO I dont think that i need the import below
         //"log/syslog"
 )
 
