@@ -33,6 +33,7 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
         //TODO if user logged say greetings
 	const layout = "3:04:05 PM"
         personalString := ""
+        //TODO fix this
         //personalString := ", Ryan"
 	fmt.Fprintf(w, `<html><head><style>
           p {font-size: xx-large}
