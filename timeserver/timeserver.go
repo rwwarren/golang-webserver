@@ -28,16 +28,19 @@ import (
 // Handles the timeserver which shows the current time
 // for the local timezone
 func timeHandler(w http.ResponseWriter, r *http.Request) {
+        //TODO if user logged say greetings
 	const layout = "3:04:05 PM"
+        personalString := ""
+        //personalString := ", Ryan"
 	fmt.Fprintf(w, `<html><head><style>
           p {font-size: xx-large}
           span.time {color: red}
           </style>
           </head>
           <body>
-          <p>The time is now <span class="time">%s</span>.</p>
+          <p>The time is now <span class="time">%s</span>%s.</p>
           </body>
-          </html>`, time.Now().Local().Format(layout))
+          </html>`, time.Now().Local().Format(layout), personalString)
 }
 
 // Handles errors for when the page is not found
