@@ -42,6 +42,10 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 
 // Handles errors for when the page is not found
 func errorer(w http.ResponseWriter, r *http.Request) {
+        if r.URL.Path == "/" {
+          loginForm(w, r)
+          return
+        }
 	w.WriteHeader(404)
 	fmt.Fprintf(w, `<html><head><style>
           p {font-size: xx-large}
@@ -99,9 +103,10 @@ func main() {
 		return
 	}
 	http.HandleFunc("/time", timeHandler)
-	http.HandleFunc("/", loginForm)
+	//http.HandleFunc("/", loginForm)
+	http.HandleFunc("/index.html", loginForm)
 	http.HandleFunc("/logout", logoutPage)
-	//http.HandleFunc("/", errorer)
+	http.HandleFunc("/", errorer)
 	var portString = fmt.Sprintf(":%d", *port)
 	err := http.ListenAndServe(portString, nil)
 	fmt.Printf("Server Failed: %s\n", err)
