@@ -21,6 +21,8 @@ import (
 	"net/http"
 	"time"
         //"os/exec"
+        "log"
+        //"log/syslog"
 )
 
 // Handles the timeserver which shows the current time
@@ -84,6 +86,14 @@ func main() {
 	port := flag.Int("port", 8080, "Set the server port, default port: 8080")
 	version := flag.Bool("V", false, "Shows the version of the timeserver")
 	flag.Parse()
+        //logwriter, e := syslog.New(syslog.LOG_NOTICE, "myprog")
+        //if e == nil {
+        //    log.SetOutput(logwriter)
+        //}
+        log.Print("Hello Logs!")
+        //var buf bytes.Buffer
+        //logger := log.New(&buf, "logger: ", log.Lshortfile)
+        //logger.Print("Hello, log file!")
 	if *version {
 		fmt.Println("Assignment Version: 1")
 		return
