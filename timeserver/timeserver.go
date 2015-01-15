@@ -26,15 +26,16 @@ import (
 // for the local timezone
 func handler(w http.ResponseWriter, r *http.Request) {
 	const layout = "3:04:05 PM"
+	const UTClayout = "3:04:05 MST"
 	fmt.Fprintf(w, `<html><head><style>
           p {font-size: xx-large}
           span.time {color: red}
           </style>
           </head>
           <body>
-          <p>The time is now <span class="time">%s</span>.</p>
+          <p>The time is now <span class="time">%s</span> (%s).</p>
           </body>
-          </html>`, time.Now().Local().Format(layout))
+          </html>`, time.Now().Local().Format(layout), time.Now().UTC().Format(UTClayout))
 }
 
 // Handles errors for when the page is not found
@@ -57,7 +58,7 @@ func main() {
 	version := flag.Bool("V", false, "Shows the version of the timeserver")
 	flag.Parse()
 	if *version {
-		fmt.Println("Assignment Version: 1")
+		fmt.Println("Assignment Version: 2")
 		return
 	}
 	http.HandleFunc("/time", handler)
