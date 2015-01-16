@@ -67,6 +67,7 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 }
 
 func loginForm(w http.ResponseWriter, r *http.Request) {
+        printRequests(r)
         //cookie := http.Cookie{"test", "tcookie", "/", "www.sliceone.com", expire, expire.Format(time.UnixDate), 86400, true, true, "test=tcookie", []string{"test=tcookie"}}
         //nameString := "testing"
         //cookie := &http.Cookie{Name:"uuid", Value:"nameString", Expires:time.Now().Add(356*24*time.Hour), HttpOnly:true}
@@ -111,6 +112,10 @@ func loginForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func logoutPage(w http.ResponseWriter, r *http.Request) {
+        cookie := &http.Cookie{Name:"uuid", Value:"s", Expires:time.Unix(1, 0), HttpOnly:true}
+        http.SetCookie(w, cookie)
+        //cookie := &http.Cookie{Name:"uuid", Value:"s", Expires:time.Now().Sub(time.Unix(1, 0)), HttpOnly:true}
+        //cookie := &http.Cookie{Name:"uuid", Value:s, Expires:time.Now().Add(356*24*time.Hour), HttpOnly:true}
 	fmt.Fprintf(w, `<html>
           <head>
           <META http-equiv="refresh" content="10;URL=/">
@@ -119,6 +124,16 @@ func logoutPage(w http.ResponseWriter, r *http.Request) {
           </body>
           </html>`)
 }
+
+// Printing errors
+func printRequests(r *http.Request){
+  //urlPath := ""
+  urlPath := r.URL.Path
+  //urlPath := r.URL.String()
+  fmt.Printf("Here is the request url: %s \n", urlPath)
+
+}
+
 
 // Main handler that runs the server on the port or shows the version of the server
 func main() {
@@ -149,6 +164,7 @@ func main() {
 	http.HandleFunc("/", errorer)
 	var portString = fmt.Sprintf(":%d", *port)
 	err := http.ListenAndServe(portString, nil)
+	fmt.Println("tests")
         if err != nil {
 	      fmt.Printf("Server Failed: %s\n", err)
               os.Exit(1)
