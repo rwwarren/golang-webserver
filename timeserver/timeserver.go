@@ -32,6 +32,7 @@ import (
 // Handles the timeserver which shows the current time
 // for the local timezone
 func timeHandler(w http.ResponseWriter, r *http.Request) {
+        printRequests(r)
         //TODO if user logged say greetings
 	const layout = "3:04:05 PM"
         personalString := ""
@@ -54,6 +55,7 @@ func errorer(w http.ResponseWriter, r *http.Request) {
           loginForm(w, r)
           return
         }
+        printRequests(r)
 	w.WriteHeader(404)
 	fmt.Fprintf(w, `<html><head><style>
           p {font-size: xx-large}
@@ -112,6 +114,7 @@ func loginForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func logoutPage(w http.ResponseWriter, r *http.Request) {
+        printRequests(r)
         cookie := &http.Cookie{Name:"uuid", Value:"s", Expires:time.Unix(1, 0), HttpOnly:true}
         http.SetCookie(w, cookie)
         //cookie := &http.Cookie{Name:"uuid", Value:"s", Expires:time.Now().Sub(time.Unix(1, 0)), HttpOnly:true}
