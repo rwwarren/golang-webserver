@@ -20,7 +20,9 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-        //"os/exec"
+        "os"
+        "os/exec"
+        //"bytes"
         //"sync"
         "log"
         //TODO I dont think that i need the import below
@@ -66,9 +68,36 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 
 func loginForm(w http.ResponseWriter, r *http.Request) {
         //cookie := http.Cookie{"test", "tcookie", "/", "www.sliceone.com", expire, expire.Format(time.UnixDate), 86400, true, true, "test=tcookie", []string{"test=tcookie"}}
-        cookie := &http.Cookie{Name:"name", Value:"ryan", Expires:time.Now().Add(356*24*time.Hour), HttpOnly:true}
+        //nameString := "testing"
+        //cookie := &http.Cookie{Name:"uuid", Value:"nameString", Expires:time.Now().Add(356*24*time.Hour), HttpOnly:true}
+        //cookie := &http.Cookie{Name:"uuid", Value:nameString, Expires:time.Now().Add(356*24*time.Hour), HttpOnly:true}
+        //cookie := &http.Cookie{Name:"name", Value:"ryan", Expires:time.Now().Add(356*24*time.Hour), HttpOnly:true}
         //r.AddCookie(&cookie)
+        //http.SetCookie(w, cookie)
+        r.ParseForm()
+        //fmt.Println("here is the request information: %s\n", r.Body)
+        formName := r.FormValue("name")
+        fmt.Printf("here is the request information: %s\n", formName)
+        uuid, err := exec.Command("uuidgen").Output()
+        if err != nil {
+              fmt.Printf("error: %s \n", err)
+              os.Exit(1)
+        }
+        n := len(uuid)-1
+        //n := bytes.Index(uuid, len(uuid)-1)
+        //n := bytes.Index(uuid, []byte{0})
+        s := string(uuid[:n])
+        cookie := &http.Cookie{Name:"uuid", Value:s, Expires:time.Now().Add(356*24*time.Hour), HttpOnly:true}
         http.SetCookie(w, cookie)
+        //s := string(byteArray[:n])
+        cookieMap := make(map[string]string)
+        //cookieMap := make(map[byte]string)
+        //cookieMap := make(map[string]string)
+        cookieMap[s] = formName
+        fmt.Printf("here is the request information: key: %s and value: %s\n", s, formName)
+        //fmt.Println("here is the request information: %s\n", formName)
+        //fmt.Println("here is the request information: %s\n", r.FormValue("name"))
+        //fmt.Println("NEW ONE here is the request information: %s\n", r.RawText())
 	fmt.Fprintf(w, `<html>
           <body>
           <form action="login">
@@ -96,6 +125,11 @@ func main() {
 	port := flag.Int("port", 8080, "Set the server port, default port: 8080")
 	version := flag.Bool("V", false, "Shows the version of the timeserver")
 	flag.Parse()
+        //cookieMap := make(map[string]string)
+        //cookieMap["test"] = "testing"
+        //cookieMap["test"] = "testing"
+        //fmt.Printf("this is the map: %s\n", cookieMap["test"])
+        //var cookieMap map[string]string
         //logwriter, e := syslog.New(syslog.LOG_NOTICE, "myprog")
         //if e == nil {
         //    log.SetOutput(logwriter)
@@ -105,7 +139,7 @@ func main() {
         //logger := log.New(&buf, "logger: ", log.Lshortfile)
         //logger.Print("Hello, log file!")
 	if *version {
-		fmt.Println("Assignment Version: 1")
+		fmt.Println("Assignment Version: 2")
 		return
 	}
 	http.HandleFunc("/time", timeHandler)
@@ -115,5 +149,8 @@ func main() {
 	http.HandleFunc("/", errorer)
 	var portString = fmt.Sprintf(":%d", *port)
 	err := http.ListenAndServe(portString, nil)
-	fmt.Printf("Server Failed: %s\n", err)
+        if err != nil {
+	      fmt.Printf("Server Failed: %s\n", err)
+              os.Exit(1)
+        }
 }
