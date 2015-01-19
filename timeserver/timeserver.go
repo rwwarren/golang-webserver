@@ -74,32 +74,24 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 func loginForm(w http.ResponseWriter, r *http.Request) {
         printRequests(r)
         if cookie, err := r.Cookie("uuid"); err == nil {
-        //if cookie, err := r.Cookie("session"); err == nil {
             fmt.Printf("randomly at this line: %s\n", cookie)
-            fmt.Printf("randomly at this line: %s", reflect.TypeOf(cookie))
+            fmt.Printf("randomly at this line: %s\n", reflect.TypeOf(cookie))
+            fmt.Printf("TRYing to get the UUID : %s\n", cookie.Value)
             //fmt.Printf("randomly at this line: %s", reflect.Method(cookie))
             //fooType := reflect.TypeOf(cookie)
             //for i := 0; i < fooType.NumMethod(); i++ {
             //      method := fooType.Method(i) 
             //          fmt.Println(method.Name)
             //}
-            cookieValue := make(map[string]string)
-            //if err = cookieHandler.Decode("session", cookie.Value, &cookieValue); err == nil {
-                userName := cookieValue["name"]
-                fmt.Println(userName)
-                //userName = cookieValue["name"]
-            //}
+            //cookieValue := make(map[string]string)
+            ////if err = cookieHandler.Decode("session", cookie.Value, &cookieValue); err == nil {
+            //    userName := cookieValue["name"]
+            //    fmt.Println(userName)
+            //    //userName = cookieValue["name"]
+            ////}
         } else {
-          fmt.Println(err)
-          //cookie := http.Cookie{"test", "tcookie", "/", "www.sliceone.com", expire, expire.Format(time.UnixDate), 86400, true, true, "test=tcookie", []string{"test=tcookie"}}
-          //nameString := "testing"
-          //cookie := &http.Cookie{Name:"uuid", Value:"nameString", Expires:time.Now().Add(356*24*time.Hour), HttpOnly:true}
-          //cookie := &http.Cookie{Name:"uuid", Value:nameString, Expires:time.Now().Add(356*24*time.Hour), HttpOnly:true}
-          //cookie := &http.Cookie{Name:"name", Value:"ryan", Expires:time.Now().Add(356*24*time.Hour), HttpOnly:true}
-          //r.AddCookie(&cookie)
-          //http.SetCookie(w, cookie)
+          fmt.Printf("Currently no cookie present: %s\n", err)
           r.ParseForm()
-          //fmt.Println("here is the request information: %s\n", r.Body)
           formName := r.FormValue("name")
           fmt.Printf("here is the request information: %s\n", formName)
           uuid, err := exec.Command("uuidgen").Output()
@@ -119,11 +111,7 @@ func loginForm(w http.ResponseWriter, r *http.Request) {
           //cookieMap := make(map[string]string)
           cookieMap[s] = formName
           fmt.Printf("here is the request information: key: %s and value: %s\n", s, formName)
-          //fmt.Println("here is the request information: %s\n", formName)
-          //fmt.Println("here is the request information: %s\n", r.FormValue("name"))
-          //fmt.Println("NEW ONE here is the request information: %s\n", r.RawText())
         }
-
 
 	fmt.Fprintf(w, `<html>
           <body>
