@@ -157,7 +157,7 @@ func main() {
         //}
         //if *logFile.Len > 0 {
         if len(*logFile) > 0 {
-          logFileName := fmt.Sprintf("%s.txt", *logFile)
+          logFileName := fmt.Sprintf("%s.log", *logFile)
           f, logerr := os.OpenFile(logFileName, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
           if logerr != nil {
                 //fmt.Fatalf("error opening file: %v", err)
