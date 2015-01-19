@@ -25,8 +25,11 @@ import (
         //"bytes"
         //"sync"
         "log"
+        //"github.com/gorilla/mux"
+        //"github.com/gorilla/securecookie"
         //TODO I dont think that i need the import below
         //"log/syslog"
+        "reflect"
 )
 
 // Handles the timeserver which shows the current time
@@ -70,6 +73,29 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 
 func loginForm(w http.ResponseWriter, r *http.Request) {
         printRequests(r)
+        //fmt.Printf("here are the vookiws: %v", "uuid")
+        //fmt.Printf("here are the vookiws: %v", r.Cookie("uuid"))
+        //for _, v := range r.Cookie("uuid") {
+        //for v := range r.Cookie("uuid") {
+        //    fmt.Println(v)
+        //}
+
+        //userName := "ryan"
+        if cookie, err := r.Cookie("uuid"); err == nil {
+        //if cookie, err := r.Cookie("session"); err == nil {
+            fmt.Printf("randomly at this line: %s\n", cookie)
+            fmt.Printf("randomly at this line: %s", reflect.TypeOf(cookie))
+            cookieValue := make(map[string]string)
+            //if err = cookieHandler.Decode("session", cookie.Value, &cookieValue); err == nil {
+                userName := cookieValue["name"]
+                fmt.Println(userName)
+                //userName = cookieValue["name"]
+            //}
+        } else {
+          fmt.Println(err)
+        }
+
+
         //cookie := http.Cookie{"test", "tcookie", "/", "www.sliceone.com", expire, expire.Format(time.UnixDate), 86400, true, true, "test=tcookie", []string{"test=tcookie"}}
         //nameString := "testing"
         //cookie := &http.Cookie{Name:"uuid", Value:"nameString", Expires:time.Now().Add(356*24*time.Hour), HttpOnly:true}
