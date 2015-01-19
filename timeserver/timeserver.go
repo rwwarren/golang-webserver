@@ -33,7 +33,6 @@ import (
 )
 
 var cookieMap map[string]string
-var x string = "Hello World"
 
 func init() {
   cookieMap = make(map[string]string)
@@ -49,7 +48,12 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 	const layout = "3:04:05 PM"
         personalString := ""
         //TODO fix this
-        //personalString := ", Ryan"
+        cookie, err := r.Cookie("uuid")
+        if err == nil && len(cookieMap[cookie.Value]) > 0 {
+          name := cookieMap[cookie.Value]
+          personalString = fmt.Sprintf(", %s", name)
+          //personalString := ", Ryan"
+        }
 	fmt.Fprintf(w, `<html><head><style>
           p {font-size: xx-large}
           span.time {color: red}
@@ -82,11 +86,19 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 
 func loginForm(w http.ResponseWriter, r *http.Request) {
         printRequests(r)
-        if cookie, err := r.Cookie("uuid"); err == nil {
+        cookie, err := r.Cookie("uuid")
+        if err == nil && len(cookieMap[cookie.Value]) > 0 {
             log.Printf("randomly at this line: %s\n", cookie)
             //fmt.Printf("randomly at this line: %s\n", cookie)
             fmt.Printf("randomly at this line: %s\n", reflect.TypeOf(cookie))
             fmt.Printf("TRYing to get the UUID : %s\n", cookie.Value)
+            name := cookieMap[cookie.Value]
+	    fmt.Fprintf(w, `<html>
+              <body>
+              Greetings, %s.
+              </body>
+              </html>`, name)
+            return
         } else {
           fmt.Printf("Currently no cookie present: %s\n", err)
           r.ParseForm()
@@ -121,8 +133,38 @@ func loginForm(w http.ResponseWriter, r *http.Request) {
           </html>`)
 }
 
+func loginPage(w http.ResponseWriter, r *http.Request){
+        r.ParseForm()
+        formName := r.FormValue("name")
+        if len(formName) > 0 {
+            cookie, err := r.Cookie("uuid")
+            if err != nil {
+              log.Printf("error getting the cookie: %s", err)
+              os.Exit(1)
+            }
+            //if cookie, err := r.Cookie("uuid"); err == nil {
+            //}
+            cookieMap[cookie.Value] = formName
+	    //w.WriteHeader(302)
+            http.Redirect(w, r, "/", 302)
+            //w.Header().Set("Location", "/one")
+            //loginForm(w,r)
+            return
+          //
+        }
+        fmt.Fprintf(w, `<html>
+                  <body>
+                  C'mon, I need a name.
+                  </body>
+                  </html>`)
+}
+
 func logoutPage(w http.ResponseWriter, r *http.Request) {
         printRequests(r)
+        if cookie, err := r.Cookie("uuid"); err == nil {
+            //
+            delete(cookieMap, cookie.Value)
+        }
         cookie := &http.Cookie{Name:"uuid", Value:"s", Expires:time.Unix(1, 0), HttpOnly:true}
         http.SetCookie(w, cookie)
         //cookie := &http.Cookie{Name:"uuid", Value:"s", Expires:time.Now().Sub(time.Unix(1, 0)), HttpOnly:true}
@@ -153,6 +195,9 @@ func main() {
 	version := flag.Bool("V", false, "Shows the version of the timeserver")
 	logFile := flag.String("LogOutput", "", "This is the log output file name")
 	flag.Parse()
+        //if cookie, err := r.Cookie("uuid"); err == nil {
+          //
+        //}
         //cookieMap := make(map[string]string)
         //cookieMap := make(map[string]string)
         //cookieMap["test"] = "testing"
@@ -188,6 +233,7 @@ func main() {
 	//http.HandleFunc("/time", timeHandler(cookieMap))
 	//http.HandleFunc("/", loginForm)
 	http.HandleFunc("/index.html", loginForm)
+	http.HandleFunc("/login", loginPage)
 	http.HandleFunc("/logout", logoutPage)
 	http.HandleFunc("/", errorer)
 	var portString = fmt.Sprintf(":%d", *port)
