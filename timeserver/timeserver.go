@@ -77,18 +77,6 @@ func loginForm(w http.ResponseWriter, r *http.Request) {
             fmt.Printf("randomly at this line: %s\n", cookie)
             fmt.Printf("randomly at this line: %s\n", reflect.TypeOf(cookie))
             fmt.Printf("TRYing to get the UUID : %s\n", cookie.Value)
-            //fmt.Printf("randomly at this line: %s", reflect.Method(cookie))
-            //fooType := reflect.TypeOf(cookie)
-            //for i := 0; i < fooType.NumMethod(); i++ {
-            //      method := fooType.Method(i) 
-            //          fmt.Println(method.Name)
-            //}
-            //cookieValue := make(map[string]string)
-            ////if err = cookieHandler.Decode("session", cookie.Value, &cookieValue); err == nil {
-            //    userName := cookieValue["name"]
-            //    fmt.Println(userName)
-            //    //userName = cookieValue["name"]
-            ////}
         } else {
           fmt.Printf("Currently no cookie present: %s\n", err)
           r.ParseForm()
