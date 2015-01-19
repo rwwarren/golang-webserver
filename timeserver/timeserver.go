@@ -32,6 +32,15 @@ import (
         "reflect"
 )
 
+var cookieMap map[string]string
+var x string = "Hello World"
+
+func init() {
+  cookieMap = make(map[string]string)
+  //cookieMap := make(map[string]string)
+
+}
+
 // Handles the timeserver which shows the current time
 // for the local timezone
 func timeHandler(w http.ResponseWriter, r *http.Request) {
@@ -95,8 +104,6 @@ func loginForm(w http.ResponseWriter, r *http.Request) {
           cookie := &http.Cookie{Name:"uuid", Value:s, Expires:time.Now().Add(356*24*time.Hour), HttpOnly:true}
           http.SetCookie(w, cookie)
           //s := string(byteArray[:n])
-          cookieMap := make(map[string]string)
-          //cookieMap := make(map[byte]string)
           //cookieMap := make(map[string]string)
           cookieMap[s] = formName
           fmt.Printf("here is the request information: key: %s and value: %s\n", s, formName)
@@ -147,6 +154,7 @@ func main() {
 	logFile := flag.String("LogOutput", "", "This is the log output file name")
 	flag.Parse()
         //cookieMap := make(map[string]string)
+        //cookieMap := make(map[string]string)
         //cookieMap["test"] = "testing"
         //cookieMap["test"] = "testing"
         //fmt.Printf("this is the map: %s\n", cookieMap["test"])
@@ -160,6 +168,8 @@ func main() {
           logFileName := fmt.Sprintf("%s.log", *logFile)
           f, logerr := os.OpenFile(logFileName, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
           if logerr != nil {
+                fmt.Printf("Error opening the log file: %v", logerr)
+                os.Exit(1)
                 //fmt.Fatalf("error opening file: %v", err)
           }
           defer f.Close()
@@ -175,6 +185,7 @@ func main() {
 		return
 	}
 	http.HandleFunc("/time", timeHandler)
+	//http.HandleFunc("/time", timeHandler(cookieMap))
 	//http.HandleFunc("/", loginForm)
 	http.HandleFunc("/index.html", loginForm)
 	http.HandleFunc("/logout", logoutPage)
