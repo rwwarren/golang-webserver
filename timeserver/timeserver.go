@@ -73,18 +73,15 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 
 func loginForm(w http.ResponseWriter, r *http.Request) {
         printRequests(r)
-        //fmt.Printf("here are the vookiws: %v", "uuid")
-        //fmt.Printf("here are the vookiws: %v", r.Cookie("uuid"))
-        //for _, v := range r.Cookie("uuid") {
-        //for v := range r.Cookie("uuid") {
-        //    fmt.Println(v)
-        //}
-
-        //userName := "ryan"
         if cookie, err := r.Cookie("uuid"); err == nil {
         //if cookie, err := r.Cookie("session"); err == nil {
             fmt.Printf("randomly at this line: %s\n", cookie)
             fmt.Printf("randomly at this line: %s", reflect.TypeOf(cookie))
+            //fmt.Printf("randomly at this line: %s", reflect.Method(cookie))
+            fooType := reflect.TypeOf(cookie)
+            for i := 0; i < fooType.NumMethod(); i++ {
+                      fmt.Println(method.Name)
+            }
             cookieValue := make(map[string]string)
             //if err = cookieHandler.Decode("session", cookie.Value, &cookieValue); err == nil {
                 userName := cookieValue["name"]
