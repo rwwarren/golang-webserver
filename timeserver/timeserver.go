@@ -74,17 +74,18 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 func loginForm(w http.ResponseWriter, r *http.Request) {
         printRequests(r)
         if cookie, err := r.Cookie("uuid"); err == nil {
-            fmt.Printf("randomly at this line: %s\n", cookie)
+            log.Printf("randomly at this line: %s\n", cookie)
+            //fmt.Printf("randomly at this line: %s\n", cookie)
             fmt.Printf("randomly at this line: %s\n", reflect.TypeOf(cookie))
             fmt.Printf("TRYing to get the UUID : %s\n", cookie.Value)
         } else {
           fmt.Printf("Currently no cookie present: %s\n", err)
           r.ParseForm()
           formName := r.FormValue("name")
-          fmt.Printf("here is the request information: %s\n", formName)
+          log.Printf("here is the request information: %s\n", formName)
           uuid, err := exec.Command("uuidgen").Output()
           if err != nil {
-                fmt.Printf("error: %s \n", err)
+                log.Printf("Error something went wrong with uuidgen: %s \n", err)
                 os.Exit(1)
           }
           n := len(uuid)-1
@@ -133,7 +134,8 @@ func printRequests(r *http.Request){
   //urlPath := ""
   urlPath := r.URL.Path
   //urlPath := r.URL.String()
-  fmt.Printf("Here is the request url: %s \n", urlPath)
+  //fmt.Printf("Here is the request url: %s \n", urlPath)
+  log.Printf("Here is the request url: %s \n", urlPath)
 
 }
 
@@ -142,6 +144,7 @@ func printRequests(r *http.Request){
 func main() {
 	port := flag.Int("port", 8080, "Set the server port, default port: 8080")
 	version := flag.Bool("V", false, "Shows the version of the timeserver")
+	logFile := flag.String("LogOutput", "", "This is the log output file name")
 	flag.Parse()
         //cookieMap := make(map[string]string)
         //cookieMap["test"] = "testing"
@@ -152,7 +155,17 @@ func main() {
         //if e == nil {
         //    log.SetOutput(logwriter)
         //}
-        log.Print("Hello Logs!")
+        //if *logFile.Len > 0 {
+        if len(*logFile) > 0 {
+          f, logerr := os.OpenFile(*logFile, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+          if logerr != nil {
+                //fmt.Fatalf("error opening file: %v", err)
+          }
+          defer f.Close()
+          log.SetOutput(f)
+        }
+
+        log.Println("Server has started up!")
         //var buf bytes.Buffer
         //logger := log.New(&buf, "logger: ", log.Lshortfile)
         //logger.Print("Hello, log file!")
