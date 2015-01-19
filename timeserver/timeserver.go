@@ -115,10 +115,12 @@ func loginForm(w http.ResponseWriter, r *http.Request) {
           s := string(uuid[:n])
           cookie := &http.Cookie{Name:"uuid", Value:s, Expires:time.Now().Add(356*24*time.Hour), HttpOnly:true}
           http.SetCookie(w, cookie)
-          //s := string(byteArray[:n])
-          //cookieMap := make(map[string]string)
-          cookieMap[s] = formName
-          fmt.Printf("here is the request information: key: %s and value: %s\n", s, formName)
+          loginPage(w, r)
+          return
+          ////s := string(byteArray[:n])
+          ////cookieMap := make(map[string]string)
+          //cookieMap[s] = formName
+          //fmt.Printf("here is the request information: key: %s and value: %s\n", s, formName)
         }
 
 	fmt.Fprintf(w, `<html>
