@@ -224,19 +224,23 @@ func loginPage(w http.ResponseWriter, r *http.Request){
               os.Exit(1)
             }
             cookieMap[cookie.Value] = formName
-	    //w.WriteHeader(302)
             http.Redirect(w, r, "/", 302)
-            //w.Header().Set("Location", "/one")
-            //loginForm(w,r)
             return
-          //
         } else {
-            fmt.Fprintf(w, `<html>
-                  <body>
-                  C'mon, I need a name.
-                  </body>
-                  </html>`)
+            log.Println("Error! User did not pass in a name to /login")
+            renderNoNamePage(w)
+            return
         }
+}
+
+func renderNoNamePage(w http.ResponseWriter) {
+    fmt.Fprintf(w, `<html>
+          <body>
+          C'mon, I need a name.
+          </body>
+          </html>`)
+    return
+
 }
 
 func logoutPage(w http.ResponseWriter, r *http.Request) {
