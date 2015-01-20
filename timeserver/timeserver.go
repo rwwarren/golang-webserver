@@ -67,10 +67,10 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 func errorer(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path == "/" {
 		indexPage(w, r)
-		//loginForm(w, r)
 		return
 	}
 	printRequests(r)
+        log.Println("Error, url not found: These are not the URLs you are looking for.")
 	w.WriteHeader(404)
 	fmt.Fprintf(w, `<html><head><style>
           p {font-size: xx-large}
@@ -85,14 +85,12 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 }
 
 func indexPage(w http.ResponseWriter, r *http.Request) {
+	printRequests(r)
 	isLoggedIn, name := checkLogin(w, r)
 	if isLoggedIn {
-		//something
 		renderIndex(w, name)
-		//renderIndex(w, r)
 		return
 	} else {
-		//please login
 		renderLogin(w, r)
 		return
 	}
