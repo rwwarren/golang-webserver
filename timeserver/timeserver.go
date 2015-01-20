@@ -30,6 +30,7 @@ var cookieMap map[string]string
 
 func init() {
   cookieMap = make(map[string]string)
+  //newcookieMap = make(map[string]string)
 }
 
 // Handles the timeserver which shows the current time
@@ -60,7 +61,8 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 // Handles errors for when the page is not found
 func errorer(w http.ResponseWriter, r *http.Request) {
         if r.URL.Path == "/" {
-          loginForm(w, r)
+          indexPage(w, r)
+          //loginForm(w, r)
           return
         }
         printRequests(r)
@@ -76,62 +78,41 @@ func errorer(w http.ResponseWriter, r *http.Request) {
           </html>`)
 }
 
-func checkLogin(w http.ResponseWriter, r *http.Request) {
-  cookie, err := r.Cookie("uuid")
-  if err != nil {
-    log.Printf("Error with the cookie: %s", err)
-    return
-  } else if len(cookie.Value) == 0 {
-    log.Println("There is no cookie, currently setting the cookie")
-    //Set the cookie
-    return
-  } else if len(cookieMap[cookie.Value]) == 0 {
-    log.Println("There is no name stored for the UUID")
+func indexPage(w http.ResponseWriter, r *http.Request) {
+  isLoggedIn, name:= checkLogin(w, r)
+  if isLoggedIn {
+    //something
+    renderIndex(w, name)
+    //renderIndex(w, r)
     return
   } else {
-    //We have a valid uuid & cookie
+    //please login
+    renderLogin(w, r)
     return
   }
 
 }
 
-func loginForm(w http.ResponseWriter, r *http.Request) {
-        printRequests(r)
-        checkLogin(w, r)
-        cookie, err := r.Cookie("uuid")
-        if err == nil && len(cookieMap[cookie.Value]) > 0 {
-            log.Printf("randomly at this line: %s\n", cookie)
-            name := cookieMap[cookie.Value]
-	    fmt.Fprintf(w, `<html>
-              <body>
-              Greetings, %s.
-              </body>
-              </html>`, name)
-            return
-        } else {
+func renderIndex(w http.ResponseWriter, name string){
+    fmt.Fprintf(w, `<html>
+      <body>
+      Greetings, %s.
+      </body>
+      </html>`, name)
+    return
+}
+
+
+
+func renderLogin(w http.ResponseWriter, r *http.Request) {
           r.ParseForm()
           formName := r.FormValue("name")
-          log.Printf("here is the request information: %s\n", formName)
-          uuid, err := exec.Command("uuidgen").Output()
-          if err != nil {
-                log.Printf("Error something went wrong with uuidgen: %s \n", err)
-                os.Exit(1)
-          }
-          log.Printf("tetsing: %s", uuid)
-          n := len(uuid)-1
-          s := string(uuid[:n])
-          cookie := &http.Cookie{Name:"uuid", Value:s, Expires:time.Now().Add(356*24*time.Hour), HttpOnly:true}
-          http.SetCookie(w, cookie)
+          log.Printf("Form request information: %s\n", formName)
           if len(formName) > 0 {
               loginPage(w, r)
               return
           }
-          ////s := string(byteArray[:n])
-          ////cookieMap := make(map[string]string)
-          //cookieMap[s] = formName
-          //fmt.Printf("here is the request information: key: %s and value: %s\n", s, formName)
-        }
-
+          setCookie(w)
 	fmt.Fprintf(w, `<html>
           <body>
           <form action="login">
@@ -142,8 +123,97 @@ func loginForm(w http.ResponseWriter, r *http.Request) {
           </p>
           </body>
           </html>`)
+          return
 }
 
+func setCookie(w http.ResponseWriter) {
+          uuid, err := exec.Command("uuidgen").Output()
+          if err != nil {
+                log.Printf("Error something went wrong with uuidgen: %s \n", err)
+                os.Exit(1)
+          }
+          log.Printf("Setting cookie with UUID: %s", uuid)
+          uuidLen := len(uuid)-1
+          uuidString := string(uuid[:uuidLen])
+          cookie := &http.Cookie{Name:"uuid", Value:uuidString, Expires:time.Now().Add(356*24*time.Hour), HttpOnly:true}
+          http.SetCookie(w, cookie)
+          return
+}
+
+
+func checkLogin(w http.ResponseWriter, r *http.Request) (bool, string) {
+  cookie, err := r.Cookie("uuid")
+  if err != nil {
+    log.Printf("Error with the cookie: %s", err)
+    return false, ""
+  } else if len(cookie.Value) == 0 {
+    log.Println("There is no cookie, currently setting the cookie")
+    setCookie(w)
+    //Set the cookie
+    return false, ""
+  } else if len(cookieMap[cookie.Value]) == 0 {
+    log.Println("There is no name stored for the UUID")
+    return false, ""
+  } else if len(cookieMap[cookie.Value]) > 0 {
+    //We have a valid uuid & cookie
+    log.Printf("User is logged in with these values: name: %s. UUID: %s", cookieMap[cookie.Value], cookie.Value)
+    return true, cookieMap[cookie.Value]
+  } else {
+    log.Println("There is an unknown error")
+    return false, ""
+  }
+
+}
+
+//func loginForm(w http.ResponseWriter, r *http.Request) {
+//        printRequests(r)
+//        checkLogin(w, r)
+//        cookie, err := r.Cookie("uuid")
+//        if err == nil && len(cookieMap[cookie.Value]) > 0 {
+//            log.Printf("randomly at this line: %s\n", cookie)
+//            name := cookieMap[cookie.Value]
+//	    fmt.Fprintf(w, `<html>
+//              <body>
+//              Greetings, %s.
+//              </body>
+//              </html>`, name)
+//            return
+//        } else {
+//          r.ParseForm()
+//          formName := r.FormValue("name")
+//          log.Printf("here is the request information: %s\n", formName)
+//          uuid, err := exec.Command("uuidgen").Output()
+//          if err != nil {
+//                log.Printf("Error something went wrong with uuidgen: %s \n", err)
+//                os.Exit(1)
+//          }
+//          log.Printf("tetsing: %s", uuid)
+//          n := len(uuid)-1
+//          s := string(uuid[:n])
+//          cookie := &http.Cookie{Name:"uuid", Value:s, Expires:time.Now().Add(356*24*time.Hour), HttpOnly:true}
+//          http.SetCookie(w, cookie)
+//          if len(formName) > 0 {
+//              loginPage(w, r)
+//              return
+//          }
+//          ////s := string(byteArray[:n])
+//          ////cookieMap := make(map[string]string)
+//          //cookieMap[s] = formName
+//          //fmt.Printf("here is the request information: key: %s and value: %s\n", s, formName)
+//        }
+//
+//	fmt.Fprintf(w, `<html>
+//          <body>
+//          <form action="login">
+//            What is your name, Earthling?
+//            <input type="text" name="name" size="50">
+//            <input type="submit">
+//          </form>
+//          </p>
+//          </body>
+//          </html>`)
+//}
+//
 func loginPage(w http.ResponseWriter, r *http.Request){
         r.ParseForm()
         formName := r.FormValue("name")
@@ -172,13 +242,11 @@ func loginPage(w http.ResponseWriter, r *http.Request){
 func logoutPage(w http.ResponseWriter, r *http.Request) {
         printRequests(r)
         if cookie, err := r.Cookie("uuid"); err == nil {
-            //
+            log.Printf("Deleting %s and %s from the server\n", cookie.Value, cookieMap[cookie.Value])
             delete(cookieMap, cookie.Value)
         }
         cookie := &http.Cookie{Name:"uuid", Value:"s", Expires:time.Unix(1, 0), HttpOnly:true}
         http.SetCookie(w, cookie)
-        //cookie := &http.Cookie{Name:"uuid", Value:"s", Expires:time.Now().Sub(time.Unix(1, 0)), HttpOnly:true}
-        //cookie := &http.Cookie{Name:"uuid", Value:s, Expires:time.Now().Add(356*24*time.Hour), HttpOnly:true}
 	fmt.Fprintf(w, `<html>
           <head>
           <META http-equiv="refresh" content="10;URL=/">
@@ -186,6 +254,7 @@ func logoutPage(w http.ResponseWriter, r *http.Request) {
           <p>Good-bye.</p>
           </body>
           </html>`)
+        return
 }
 
 // Funtion for printing the request URL path
@@ -201,50 +270,33 @@ func main() {
 	version := flag.Bool("V", false, "Shows the version of the timeserver")
 	logFile := flag.String("LogOutput", "", "This is the log output file name")
 	flag.Parse()
-        //if cookie, err := r.Cookie("uuid"); err == nil {
-          //
-        //}
-        //cookieMap := make(map[string]string)
-        //cookieMap := make(map[string]string)
-        //cookieMap["test"] = "testing"
-        //cookieMap["test"] = "testing"
-        //fmt.Printf("this is the map: %s\n", cookieMap["test"])
-        //var cookieMap map[string]string
-        //logwriter, e := syslog.New(syslog.LOG_NOTICE, "myprog")
-        //if e == nil {
-        //    log.SetOutput(logwriter)
-        //}
-        //if *logFile.Len > 0 {
         if len(*logFile) > 0 {
           logFileName := fmt.Sprintf("%s.log", *logFile)
           f, logerr := os.OpenFile(logFileName, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
           if logerr != nil {
                 fmt.Printf("Error opening the log file: %v", logerr)
                 os.Exit(1)
-                //fmt.Fatalf("error opening file: %v", err)
           }
           defer f.Close()
           log.SetOutput(f)
         }
-
+        log.Printf("Port flag is set as: %d\n", *port)
+        log.Printf("Version flag is set? %v\n", *version)
+        log.Printf("Log file flag is set as: %s\n", *logFile)
         log.Println("Server has started up!")
-        //var buf bytes.Buffer
-        //logger := log.New(&buf, "logger: ", log.Lshortfile)
-        //logger.Print("Hello, log file!")
 	if *version {
-		fmt.Println("Assignment Version: 2")
+                log.Println("Printing out the version")
+	        fmt.Println("Assignment Version: 2")
 		return
 	}
 	http.HandleFunc("/time", timeHandler)
-	//http.HandleFunc("/time", timeHandler(cookieMap))
-	//http.HandleFunc("/", loginForm)
-	http.HandleFunc("/index.html", loginForm)
+	http.HandleFunc("/index.html", indexPage)
 	http.HandleFunc("/login", loginPage)
+	//http.HandleFunc("/login", loginPage)
 	http.HandleFunc("/logout", logoutPage)
 	http.HandleFunc("/", errorer)
 	var portString = fmt.Sprintf(":%d", *port)
 	err := http.ListenAndServe(portString, nil)
-	fmt.Println("tests")
         if err != nil {
 	      log.Printf("Server Failed: %s\n", err)
               os.Exit(1)
