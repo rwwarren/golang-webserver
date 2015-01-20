@@ -27,19 +27,19 @@ import (
         "log"
 )
 
-var cookieMap map[string]string
-var counter struct{
+//var cookieMap map[string]string
+var concurrentMap struct{
       sync.RWMutex
-      m map[string]string
+      cookieMap map[string]string
       }
 
 func init() {
-  counter = struct{
+  concurrentMap = struct{
         sync.RWMutex
-        m map[string]string
-        }{m: make(map[string]string)}
+        cookieMap map[string]string
+        }{cookieMap: make(map[string]string)}
 
-  cookieMap = make(map[string]string)
+  //cookieMap = make(map[string]string)
 }
 
 // Handles the timeserver which shows the current time
@@ -51,12 +51,12 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
         personalString := ""
         //TODO fix this
         cookie, err := r.Cookie("uuid")
-        counter.RLock()
-        if err == nil && len(cookieMap[cookie.Value]) > 0 {
-          name := cookieMap[cookie.Value]
+        concurrentMap.RLock()
+        if err == nil && len(concurrentMap.cookieMap[cookie.Value]) > 0 {
+          name := concurrentMap.cookieMap[cookie.Value]
           personalString = fmt.Sprintf(", %s", name)
         }
-        counter.RUnlock()
+        concurrentMap.RUnlock()
 	fmt.Fprintf(w, `<html><head><style>
           p {font-size: xx-large}
           span.time {color: red}
@@ -114,15 +114,24 @@ func renderIndex(w http.ResponseWriter, name string){
     return
 }
 
+func renderNoNamePage(w http.ResponseWriter) {
+    fmt.Fprintf(w, `<html>
+          <body>
+          C'mon, I need a name.
+          </body>
+          </html>`)
+    return
+}
+
 func renderLogin(w http.ResponseWriter, r *http.Request) {
-          r.ParseForm()
-          formName := r.FormValue("name")
-          log.Printf("Form request information: %s\n", formName)
-          if len(formName) > 0 {
-              loginPage(w, r)
-              return
-          }
-          setCookie(w)
+          //r.ParseForm()
+          //formName := r.FormValue("name")
+          //log.Printf("ForcookieMap request information: %s\n", formName)
+          //if len(formName) > 0 {
+          //    loginPage(w, r)
+          //    return
+          //}
+          //setCookie(w)
 	fmt.Fprintf(w, `<html>
           <body>
           <form action="login">
@@ -134,15 +143,6 @@ func renderLogin(w http.ResponseWriter, r *http.Request) {
           </body>
           </html>`)
           return
-}
-
-func renderNoNamePage(w http.ResponseWriter) {
-    fmt.Fprintf(w, `<html>
-          <body>
-          C'mon, I need a name.
-          </body>
-          </html>`)
-    return
 }
 
 func setCookie(w http.ResponseWriter) {
@@ -170,18 +170,22 @@ func checkLogin(w http.ResponseWriter, r *http.Request) (bool, string) {
     setCookie(w)
     //Set the cookie
     return false, ""
-  } else if len(cookieMap[cookie.Value]) == 0 {
+  }
+  concurrentMap.RLock()
+  name := concurrentMap.cookieMap[cookie.Value]
+  concurrentMap.RUnlock()
+  if len(name) == 0 {
     log.Println("There is no name stored for the UUID")
     return false, ""
-  } else if len(cookieMap[cookie.Value]) > 0 {
+  } else if len(name) > 0 {
     //We have a valid uuid & cookie
-    log.Printf("User is logged in with these values: name: %s. UUID: %s", cookieMap[cookie.Value], cookie.Value)
-    return true, cookieMap[cookie.Value]
+    log.Printf("User is logged in with these values: name: %s. UUID: %s", name, cookie.Value)
+    return true, name
   } else {
     log.Println("There is an unknown error")
     return false, ""
   }
-
+//ADD SYNC here
 }
 
 func loginPage(w http.ResponseWriter, r *http.Request){
@@ -189,11 +193,20 @@ func loginPage(w http.ResponseWriter, r *http.Request){
         formName := r.FormValue("name")
         if len(formName) > 0 {
             cookie, err := r.Cookie("uuid")
+            //TODO fix this
+            if err != nil {
+              setCookie(w)
+            }
+            cookie, err = r.Cookie("uuid")
+            //cookie, err := r.Cookie("uuid")
             if err != nil {
               log.Printf("error getting the cookie: %s", err)
-              os.Exit(1)
+              //os.Exit(1)
+              return
             }
-            cookieMap[cookie.Value] = formName
+            concurrentMap.Lock()
+            concurrentMap.cookieMap[cookie.Value] = formName
+            concurrentMap.Unlock()
             http.Redirect(w, r, "/", 302)
             return
         } else {
@@ -207,8 +220,12 @@ func loginPage(w http.ResponseWriter, r *http.Request){
 func logoutPage(w http.ResponseWriter, r *http.Request) {
         printRequests(r)
         if cookie, err := r.Cookie("uuid"); err == nil {
-            log.Printf("Deleting %s and %s from the server\n", cookie.Value, cookieMap[cookie.Value])
-            delete(cookieMap, cookie.Value)
+          concurrentMap.RLock()
+          name := concurrentMap.cookieMap[cookie.Value]
+          concurrentMap.RUnlock()
+            log.Printf("Deleting %s and %s frocookieMap the server\n", cookie.Value, name)
+            delete(concurrentMap.cookieMap, cookie.Value)
+            //delete(cookieMap, cookie.Value)
         }
         cookie := &http.Cookie{Name:"uuid", Value:"s", Expires:time.Unix(1, 0), HttpOnly:true}
         http.SetCookie(w, cookie)
