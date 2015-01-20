@@ -12,6 +12,7 @@
 // There are command line options.
 // "--port PORT_NUMBER" will change the port.
 // "-V" will show the version and then quit.
+// "-LogOutput FILENAME" pass in the log file and it will output to FILENAME.log
 
 package main
 
@@ -26,11 +27,13 @@ import (
 	"time"
 )
 
+// Stores the cookie information
 var concurrentMap struct {
 	sync.RWMutex
 	cookieMap map[string]string
 }
 
+// Intitalizes the concurrentMap
 func init() {
 	concurrentMap = struct {
 		sync.RWMutex
@@ -84,6 +87,8 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// Checks the index page and will render the
+// index based on the user being loggedin or not
 func indexPage(w http.ResponseWriter, r *http.Request) {
 	printRequests(r)
 	isLoggedIn, name := checkLogin(w, r)
@@ -97,6 +102,7 @@ func indexPage(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// Renders the page for a loggedin user
 func renderIndex(w http.ResponseWriter, name string) {
 	fmt.Fprintf(w, `<html>
       <body>
@@ -106,6 +112,8 @@ func renderIndex(w http.ResponseWriter, name string) {
 	return
 }
 
+// Renders the page if there is no name passed into
+// the login page
 func renderNoNamePage(w http.ResponseWriter) {
 	fmt.Fprintf(w, `<html>
           <body>
@@ -115,6 +123,7 @@ func renderNoNamePage(w http.ResponseWriter) {
 	return
 }
 
+// Renders the login page to the website
 func renderLogin(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, `<html>
           <body>
@@ -129,6 +138,7 @@ func renderLogin(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// Returns the cookie for the server. Will set one if there is none
 func setCookie(w http.ResponseWriter, r *http.Request) (*http.Cookie) {
 	checkCookie, cookieError := r.Cookie("uuid")
 	if cookieError == nil {
@@ -148,6 +158,8 @@ func setCookie(w http.ResponseWriter, r *http.Request) (*http.Cookie) {
 	return cookie
 }
 
+// Checks the if the user is logged in and if there is a user
+// associated with the cookie
 func checkLogin(w http.ResponseWriter, r *http.Request) (bool, string) {
 	cookie := setCookie(w, r)
 	concurrentMap.RLock()
