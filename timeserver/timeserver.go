@@ -22,12 +22,10 @@ import (
 	"time"
         "os"
         "os/exec"
-        //"sync"
         "sync"
         "log"
 )
 
-//var cookieMap map[string]string
 var concurrentMap struct{
       sync.RWMutex
       cookieMap map[string]string
@@ -38,8 +36,6 @@ func init() {
         sync.RWMutex
         cookieMap map[string]string
         }{cookieMap: make(map[string]string)}
-
-  //cookieMap = make(map[string]string)
 }
 
 // Handles the timeserver which shows the current time
@@ -124,14 +120,6 @@ func renderNoNamePage(w http.ResponseWriter) {
 }
 
 func renderLogin(w http.ResponseWriter, r *http.Request) {
-          //r.ParseForm()
-          //formName := r.FormValue("name")
-          //log.Printf("ForcookieMap request information: %s\n", formName)
-          //if len(formName) > 0 {
-          //    loginPage(w, r)
-          //    return
-          //}
-          //setCookie(w)
 	fmt.Fprintf(w, `<html>
           <body>
           <form action="login">
@@ -185,7 +173,6 @@ func checkLogin(w http.ResponseWriter, r *http.Request) (bool, string) {
     log.Println("There is an unknown error")
     return false, ""
   }
-//ADD SYNC here
 }
 
 func loginPage(w http.ResponseWriter, r *http.Request){
