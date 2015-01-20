@@ -22,22 +22,14 @@ import (
 	"time"
         "os"
         "os/exec"
-        //"bytes"
         //"sync"
         "log"
-        //"github.com/gorilla/mux"
-        //"github.com/gorilla/securecookie"
-        //TODO I dont think that i need the import below
-        //"log/syslog"
-        "reflect"
 )
 
 var cookieMap map[string]string
 
 func init() {
   cookieMap = make(map[string]string)
-  //cookieMap := make(map[string]string)
-
 }
 
 // Handles the timeserver which shows the current time
@@ -84,14 +76,31 @@ func errorer(w http.ResponseWriter, r *http.Request) {
           </html>`)
 }
 
+func checkLogin(w http.ResponseWriter, r *http.Request) {
+  cookie, err := r.Cookie("uuid")
+  if err != nil {
+    log.Printf("Error with the cookie: %s", err)
+    return
+  } else if len(cookie.Value) == 0 {
+    log.Println("There is no cookie, currently setting the cookie")
+    //Set the cookie
+    return
+  } else if len(cookieMap[cookie.Value]) == 0 {
+    log.Println("There is no name stored for the UUID")
+    return
+  } else {
+    //We have a valid uuid & cookie
+    return
+  }
+
+}
+
 func loginForm(w http.ResponseWriter, r *http.Request) {
         printRequests(r)
+        checkLogin(w, r)
         cookie, err := r.Cookie("uuid")
         if err == nil && len(cookieMap[cookie.Value]) > 0 {
             log.Printf("randomly at this line: %s\n", cookie)
-            //fmt.Printf("randomly at this line: %s\n", cookie)
-            fmt.Printf("randomly at this line: %s\n", reflect.TypeOf(cookie))
-            fmt.Printf("TRYing to get the UUID : %s\n", cookie.Value)
             name := cookieMap[cookie.Value]
 	    fmt.Fprintf(w, `<html>
               <body>
@@ -100,7 +109,6 @@ func loginForm(w http.ResponseWriter, r *http.Request) {
               </html>`, name)
             return
         } else {
-          fmt.Printf("Currently no cookie present: %s\n", err)
           r.ParseForm()
           formName := r.FormValue("name")
           log.Printf("here is the request information: %s\n", formName)
@@ -109,14 +117,15 @@ func loginForm(w http.ResponseWriter, r *http.Request) {
                 log.Printf("Error something went wrong with uuidgen: %s \n", err)
                 os.Exit(1)
           }
+          log.Printf("tetsing: %s", uuid)
           n := len(uuid)-1
-          //n := bytes.Index(uuid, len(uuid)-1)
-          //n := bytes.Index(uuid, []byte{0})
           s := string(uuid[:n])
           cookie := &http.Cookie{Name:"uuid", Value:s, Expires:time.Now().Add(356*24*time.Hour), HttpOnly:true}
           http.SetCookie(w, cookie)
-          loginPage(w, r)
-          return
+          if len(formName) > 0 {
+              loginPage(w, r)
+              return
+          }
           ////s := string(byteArray[:n])
           ////cookieMap := make(map[string]string)
           //cookieMap[s] = formName
@@ -144,8 +153,6 @@ func loginPage(w http.ResponseWriter, r *http.Request){
               log.Printf("error getting the cookie: %s", err)
               os.Exit(1)
             }
-            //if cookie, err := r.Cookie("uuid"); err == nil {
-            //}
             cookieMap[cookie.Value] = formName
 	    //w.WriteHeader(302)
             http.Redirect(w, r, "/", 302)
@@ -153,12 +160,13 @@ func loginPage(w http.ResponseWriter, r *http.Request){
             //loginForm(w,r)
             return
           //
-        }
-        fmt.Fprintf(w, `<html>
+        } else {
+            fmt.Fprintf(w, `<html>
                   <body>
                   C'mon, I need a name.
                   </body>
                   </html>`)
+        }
 }
 
 func logoutPage(w http.ResponseWriter, r *http.Request) {
@@ -180,14 +188,10 @@ func logoutPage(w http.ResponseWriter, r *http.Request) {
           </html>`)
 }
 
-// Printing errors
+// Funtion for printing the request URL path
 func printRequests(r *http.Request){
-  //urlPath := ""
   urlPath := r.URL.Path
-  //urlPath := r.URL.String()
-  //fmt.Printf("Here is the request url: %s \n", urlPath)
-  log.Printf("Here is the request url: %s \n", urlPath)
-
+  log.Printf("Here is the request url path: %s \n", urlPath)
 }
 
 
@@ -242,7 +246,7 @@ func main() {
 	err := http.ListenAndServe(portString, nil)
 	fmt.Println("tests")
         if err != nil {
-	      fmt.Printf("Server Failed: %s\n", err)
+	      log.Printf("Server Failed: %s\n", err)
               os.Exit(1)
         }
 }
