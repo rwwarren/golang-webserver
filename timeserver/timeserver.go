@@ -23,14 +23,23 @@ import (
         "os"
         "os/exec"
         //"sync"
+        "sync"
         "log"
 )
 
 var cookieMap map[string]string
+var counter struct{
+      sync.RWMutex
+      m map[string]string
+      }
 
 func init() {
+  counter = struct{
+        sync.RWMutex
+        m map[string]string
+        }{m: make(map[string]string)}
+
   cookieMap = make(map[string]string)
-  //newcookieMap = make(map[string]string)
 }
 
 // Handles the timeserver which shows the current time
@@ -42,11 +51,12 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
         personalString := ""
         //TODO fix this
         cookie, err := r.Cookie("uuid")
+        counter.RLock()
         if err == nil && len(cookieMap[cookie.Value]) > 0 {
           name := cookieMap[cookie.Value]
           personalString = fmt.Sprintf(", %s", name)
-          //personalString := ", Ryan"
         }
+        counter.RUnlock()
 	fmt.Fprintf(w, `<html><head><style>
           p {font-size: xx-large}
           span.time {color: red}
@@ -56,6 +66,7 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
           <p>The time is now <span class="time">%s</span>%s.</p>
           </body>
           </html>`, time.Now().Local().Format(layout), personalString)
+        return
 }
 
 // Handles errors for when the page is not found
@@ -76,6 +87,7 @@ func errorer(w http.ResponseWriter, r *http.Request) {
           <p>These are not the URLs you're looking for.</p>
           </body>
           </html>`)
+        return
 }
 
 func indexPage(w http.ResponseWriter, r *http.Request) {
@@ -102,8 +114,6 @@ func renderIndex(w http.ResponseWriter, name string){
     return
 }
 
-
-
 func renderLogin(w http.ResponseWriter, r *http.Request) {
           r.ParseForm()
           formName := r.FormValue("name")
@@ -124,6 +134,15 @@ func renderLogin(w http.ResponseWriter, r *http.Request) {
           </body>
           </html>`)
           return
+}
+
+func renderNoNamePage(w http.ResponseWriter) {
+    fmt.Fprintf(w, `<html>
+          <body>
+          C'mon, I need a name.
+          </body>
+          </html>`)
+    return
 }
 
 func setCookie(w http.ResponseWriter) {
@@ -165,55 +184,6 @@ func checkLogin(w http.ResponseWriter, r *http.Request) (bool, string) {
 
 }
 
-//func loginForm(w http.ResponseWriter, r *http.Request) {
-//        printRequests(r)
-//        checkLogin(w, r)
-//        cookie, err := r.Cookie("uuid")
-//        if err == nil && len(cookieMap[cookie.Value]) > 0 {
-//            log.Printf("randomly at this line: %s\n", cookie)
-//            name := cookieMap[cookie.Value]
-//	    fmt.Fprintf(w, `<html>
-//              <body>
-//              Greetings, %s.
-//              </body>
-//              </html>`, name)
-//            return
-//        } else {
-//          r.ParseForm()
-//          formName := r.FormValue("name")
-//          log.Printf("here is the request information: %s\n", formName)
-//          uuid, err := exec.Command("uuidgen").Output()
-//          if err != nil {
-//                log.Printf("Error something went wrong with uuidgen: %s \n", err)
-//                os.Exit(1)
-//          }
-//          log.Printf("tetsing: %s", uuid)
-//          n := len(uuid)-1
-//          s := string(uuid[:n])
-//          cookie := &http.Cookie{Name:"uuid", Value:s, Expires:time.Now().Add(356*24*time.Hour), HttpOnly:true}
-//          http.SetCookie(w, cookie)
-//          if len(formName) > 0 {
-//              loginPage(w, r)
-//              return
-//          }
-//          ////s := string(byteArray[:n])
-//          ////cookieMap := make(map[string]string)
-//          //cookieMap[s] = formName
-//          //fmt.Printf("here is the request information: key: %s and value: %s\n", s, formName)
-//        }
-//
-//	fmt.Fprintf(w, `<html>
-//          <body>
-//          <form action="login">
-//            What is your name, Earthling?
-//            <input type="text" name="name" size="50">
-//            <input type="submit">
-//          </form>
-//          </p>
-//          </body>
-//          </html>`)
-//}
-//
 func loginPage(w http.ResponseWriter, r *http.Request){
         r.ParseForm()
         formName := r.FormValue("name")
@@ -233,16 +203,7 @@ func loginPage(w http.ResponseWriter, r *http.Request){
         }
 }
 
-func renderNoNamePage(w http.ResponseWriter) {
-    fmt.Fprintf(w, `<html>
-          <body>
-          C'mon, I need a name.
-          </body>
-          </html>`)
-    return
-
-}
-
+// Here is the logout page that will remove the cookies assosiated with the user
 func logoutPage(w http.ResponseWriter, r *http.Request) {
         printRequests(r)
         if cookie, err := r.Cookie("uuid"); err == nil {
@@ -296,7 +257,6 @@ func main() {
 	http.HandleFunc("/time", timeHandler)
 	http.HandleFunc("/index.html", indexPage)
 	http.HandleFunc("/login", loginPage)
-	//http.HandleFunc("/login", loginPage)
 	http.HandleFunc("/logout", logoutPage)
 	http.HandleFunc("/", errorer)
 	var portString = fmt.Sprintf(":%d", *port)
@@ -305,4 +265,6 @@ func main() {
 	      log.Printf("Server Failed: %s\n", err)
               os.Exit(1)
         }
+        log.Println("Server Closed")
 }
+
