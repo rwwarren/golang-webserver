@@ -9,7 +9,7 @@ GOROOT="/usr/apps/go/hg/"
 GOLOC="/usr/apps/go/hg/bin/go"
 
 ifdef BREW
-	GOLOC="go"
+	GOLOC=$(shell which go)
 endif
 
 all: print install run
