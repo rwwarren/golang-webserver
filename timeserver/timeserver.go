@@ -177,6 +177,8 @@ func checkLogin(w http.ResponseWriter, r *http.Request) (bool, string) {
 	}
 }
 
+// Will parse the form to add the user into the logged in
+// users and redirect to the homepage
 func loginPage(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	formName := r.FormValue("name")
