@@ -26,7 +26,7 @@ import (
 // for the local timezone
 func handler(w http.ResponseWriter, r *http.Request) {
 	const layout = "3:04:05 PM"
-	const UTClayout = "3:04:05 MST"
+	const UTClayout = "15:04:05 MST"
 	fmt.Fprintf(w, `<html><head><style>
           p {font-size: xx-large}
           span.time {color: red}
