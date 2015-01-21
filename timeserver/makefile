@@ -12,10 +12,14 @@ ifdef BREW
 	GOLOC=$(shell which go)
 endif
 
-all: print install run
+all: setup print install run
 
 help:
 	@cat readme.txt
+
+setup:
+	@PATH=${PATH}:/usr/apps/go/hg/bin
+	GOLOC=$(shell which go)
 
 print:
 	@echo "GOROOT: " $(GOROOT)
