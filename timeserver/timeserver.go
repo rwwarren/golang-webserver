@@ -73,7 +73,7 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	printRequests(r)
-        log.Println("Error, url not found: These are not the URLs you are looking for.")
+	log.Println("Error, url not found: These are not the URLs you are looking for.")
 	w.WriteHeader(404)
 	fmt.Fprintf(w, `<html><head><style>
           p {font-size: xx-large}
@@ -139,12 +139,12 @@ func renderLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 // Returns the cookie for the server. Will set one if there is none
-func setCookie(w http.ResponseWriter, r *http.Request) (*http.Cookie) {
+func setCookie(w http.ResponseWriter, r *http.Request) *http.Cookie {
 	checkCookie, cookieError := r.Cookie("uuid")
 	if cookieError == nil {
-          log.Printf("Cookie is already set: %s", checkCookie.Value)
-          return checkCookie
-        }
+		log.Printf("Cookie is already set: %s", checkCookie.Value)
+		return checkCookie
+	}
 	uuid, err := exec.Command("uuidgen").Output()
 	if err != nil {
 		log.Printf("Error something went wrong with uuidgen: %s \n", err)
