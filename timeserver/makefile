@@ -3,6 +3,8 @@
 # "install", "run"
 # GOLOC is the location of the go executable
 # This also takes PORT for the port
+# Another thing is LOG and filename
+# for the logfile name (which appends .log)
 # Lastly will take V for version
 
 GOROOT="/usr/apps/go/hg/"
@@ -14,11 +16,10 @@ ifdef BREW
 endif
 ifdef LOG
 	LOGFILE="--LogOutput $(LOG)"
-	export LOGFILE
 endif
 
 
-all: setup print install run
+all: print install run
 
 help:
 	@cat readme.txt
