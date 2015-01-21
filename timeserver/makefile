@@ -17,10 +17,6 @@ all: setup print install run
 help:
 	@cat readme.txt
 
-setup:
-	@PATH=${PATH}:/usr/apps/go/hg/bin
-	GOLOC=$(shell which go)
-
 print:
 	@echo "GOROOT: " $(GOROOT)
 	@echo "GOLOC: " $(GOLOC)
