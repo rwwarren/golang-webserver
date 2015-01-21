@@ -9,6 +9,7 @@
               make run PORT=3030
               make run V=1
               make run BREW=1
+              make run LOG=asdf
 
   Options:
     help      Displays this, the help message
@@ -25,6 +26,7 @@
     GOROOT    If unset, then GOROOT will default to "/usr/apps/go/hg/"
               otherwise set it to the location where go is installed
     PORT      Set the port for the server to run on
+    LOG       Set the log filename for the logs to go to
     V         Will display the server version and quit
 
 
