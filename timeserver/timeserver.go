@@ -200,11 +200,11 @@ func loginPage(w http.ResponseWriter, r *http.Request) {
 func logoutPage(w http.ResponseWriter, r *http.Request) {
 	printRequests(r)
 	if cookie, err := r.Cookie("uuid"); err == nil {
-		concurrentMap.RLock()
+		concurrentMap.Lock()
 		name := concurrentMap.cookieMap[cookie.Value]
-		concurrentMap.RUnlock()
-		log.Printf("Deleting %s and %s from the server\n", cookie.Value, name)
 		delete(concurrentMap.cookieMap, cookie.Value)
+		concurrentMap.Unlock()
+		log.Printf("Deleting %s and %s from the server\n", cookie.Value, name)
 	}
 	cookie := &http.Cookie{Name: "uuid", Value: "s", Expires: time.Unix(1, 0), HttpOnly: true}
 	http.SetCookie(w, cookie)

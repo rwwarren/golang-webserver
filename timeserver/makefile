@@ -7,10 +7,16 @@
 
 GOROOT="/usr/apps/go/hg/"
 GOLOC="/usr/apps/go/hg/bin/go"
+LOGFILE=""
 
 ifdef BREW
 	GOLOC=$(shell which go)
 endif
+ifdef LOG
+	LOGFILE="--LogOutput $(LOG)"
+	export LOGFILE
+endif
+
 
 all: setup print install run
 
@@ -37,10 +43,10 @@ ifdef V
 else
   ifndef PORT
 	@echo ":8080"
-	- ./timeserver
+	- ./timeserver $(shell echo $(LOGFILE))
   else
 	@echo ":"$(PORT)
-	- ./timeserver --port $(PORT)
+	- ./timeserver --port $(PORT) $(shell echo $(LOGFILE))
   endif
 endif
 
