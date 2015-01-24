@@ -46,6 +46,7 @@ func init() {
 func timeHandler(w http.ResponseWriter, r *http.Request) {
 	printRequests(r)
 	const layout = "3:04:05 PM"
+	const UTClayout = "15:04:05 MST"
 	personalString := ""
 	cookie := setCookie(w, r)
 	concurrentMap.RLock()
@@ -60,9 +61,10 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
           </style>
           </head>
           <body>
-          <p>The time is now <span class="time">%s</span>%s.</p>
+          <p>The time is now <span class="time">%s</span> (%s)%s.</p>
           </body>
-          </html>`, time.Now().Local().Format(layout), personalString)
+          </html>`, time.Now().Local().Format(layout),
+              time.Now().UTC().Format(UTClayout), personalString)
 	return
 }
 
