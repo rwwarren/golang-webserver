@@ -1,0 +1,10 @@
+<seelog>
+  <outputs>
+    <console formatid="normal"/>
+    <!-- <console formatid="std:json"/> -->
+  </outputs>
+  <formats>
+    <format id="normal" format="[%LEVEL] %Date %Time: %Msg"/>
+  </formats>
+</seelog>
+<!-- 2015/01/23 18:33:41 -->

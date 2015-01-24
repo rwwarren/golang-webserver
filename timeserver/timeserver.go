@@ -247,6 +247,11 @@ func main() {
 	version := flag.Bool("V", false, "Shows the version of the timeserver")
 	logFile := flag.String("LogOutput", "", "This is the log output file name")
 	flag.Parse()
+        logger, logError := log.LoggerFromConfigAsFile("logConfig.xml")
+        if logError != nil {
+              fmt.Printf("Log instantiation error: %s", logError)
+        }
+        log.ReplaceLogger(logger)
 	//if len(*logFile) > 0 {
 	//	logFileName := fmt.Sprintf("%s.log", *logFile)
 	//	f, logerr := os.OpenFile(logFileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
