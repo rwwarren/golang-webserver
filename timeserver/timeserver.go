@@ -19,13 +19,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	//"log"
 	"net/http"
 	"os"
 	"os/exec"
 	"sync"
 	"time"
-        //"../seelog"
         log "../seelog-master/"
 )
 
