@@ -26,10 +26,8 @@ import (
 	"sync"
 	"time"
         //"../seelog"
-        //log "../seelog-master/"
+        log "../seelog-master/"
 )
-
-import log "../seelog-master/"
 
 // Stores the cookie information
 var concurrentMap struct {
