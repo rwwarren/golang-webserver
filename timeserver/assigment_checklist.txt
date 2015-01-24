@@ -1,0 +1,6 @@
+- new look and feel (see below)
+- template
+- header and footer
+- cookie management
+- Log messages
+- UTC time √

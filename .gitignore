@@ -2,7 +2,7 @@
 *.swp
 *.docx
 *.log
-timeserver
+timeserver/timeserver
 test/*
 *.tar.gz
 
