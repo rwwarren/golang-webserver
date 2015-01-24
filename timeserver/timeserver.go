@@ -67,12 +67,34 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 //          </html>`, time.Now().Local().Format(layout),
 //              time.Now().UTC().Format(UTClayout), personalString)
 //	return
-  var hogeTmpl = template.Must(template.New("hoge").ParseFiles("templates/template.html", "templates/menu.html", "templates/time.html"))
+  //var hogeTmpl = template.New("template").ParseFiles("templates/template.html", "templates/menu.html", "templates/time.html")
+  var hogeTmpl = template.Must(template.New("template").ParseFiles("templates/template.html", "templates/menu.html", "templates/time.html"))
   fmt.Println(personalString)
-  hogeTmpl.ExecuteTemplate(w, "template", "personalString")
+  currentTime := time.Now().Local().Format(layout)
+  UTCTime := time.Now().UTC().Format(UTClayout)
+  asdf := &Testing{
+    Name: personalString,
+    CurrentTime: currentTime,
+    UTCtime: UTCTime,
+  }
+  hogeTmpl.ExecuteTemplate(w, "template", asdf)
+  data := asdf
+  fmt.Println(asdf)
+  fmt.Println(data)
+  //hogeTmpl.ExecuteTemplate(w, "template", map[string]string{"Name":personalString})
+  //hogeTmpl.Execute(w, "template", data)
+  //hogeTmpl.ExecuteTemplate(w, "template", data)
+  //hogeTmpl.ExecuteTemplate(w, "template", *asdf)
+  //hogeTmpl.ExecuteTemplate(w, "template", "personalString")
   //hogeTmpl.ExecuteTemplate(w, "template", personalString)
   //hogeTmpl.ExecuteTemplate(w, "template", []string{time.Now().Local().Format(layout), time.Now().UTC().Format(UTClayout), personalString})
   //hogeTmpl.ExecuteTemplate(w, "template", "Hoge")
+}
+
+type Testing struct {
+  Name          string
+  CurrentTime   string
+  UTCtime       string
 }
 
 // Handles errors for when the page is not found
