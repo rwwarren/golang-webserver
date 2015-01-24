@@ -1,0 +1,21 @@
+{{define "template"}}
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="/css/css490.css" />
+  </head>
+  <body>
+    <div class="logo">
+      &nbsp;
+    </div>
+    <hr class="logo" />
+    {{template "menu"}}
+    {{template "content"}}
+    {{.}}
+
+
+    <p class="time">The time is now <span class="time">6:58:48 PM</span>.</p>
+
+    {{template "menu"}}
+  </body>
+</html>
+{{end}}

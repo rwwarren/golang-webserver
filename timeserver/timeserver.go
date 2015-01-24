@@ -56,17 +56,23 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 		personalString = fmt.Sprintf(", %s", name)
 	}
 	concurrentMap.RUnlock()
-	fmt.Fprintf(w, `<html><head><style>
-          p {font-size: xx-large}
-          span.time {color: red}
-          </style>
-          </head>
-          <body>
-          <p>The time is now <span class="time">%s</span> (%s)%s.</p>
-          </body>
-          </html>`, time.Now().Local().Format(layout),
-              time.Now().UTC().Format(UTClayout), personalString)
-	return
+//	fmt.Fprintf(w, `<html><head><style>
+//          p {font-size: xx-large}
+//          span.time {color: red}
+//          </style>
+//          </head>
+//          <body>
+//          <p>The time is now <span class="time">%s</span> (%s)%s.</p>
+//          </body>
+//          </html>`, time.Now().Local().Format(layout),
+//              time.Now().UTC().Format(UTClayout), personalString)
+//	return
+  var hogeTmpl = template.Must(template.New("hoge").ParseFiles("templates/template.html", "templates/menu.html", "templates/time.html"))
+  fmt.Println(personalString)
+  hogeTmpl.ExecuteTemplate(w, "template", "personalString")
+  //hogeTmpl.ExecuteTemplate(w, "template", personalString)
+  //hogeTmpl.ExecuteTemplate(w, "template", []string{time.Now().Local().Format(layout), time.Now().UTC().Format(UTClayout), personalString})
+  //hogeTmpl.ExecuteTemplate(w, "template", "Hoge")
 }
 
 // Handles errors for when the page is not found
@@ -76,7 +82,7 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	printRequests(r)
-	log.Info("Error, url not found: These are not the URLs you are looking for.")
+	log.Info("Error, url not found: These are not the URLs you are looking for.\n")
 	//log.Println("Error, url not found: These are not the URLs you are looking for.")
 	w.WriteHeader(404)
 	fmt.Fprintf(w, `<html><head><style>
@@ -114,8 +120,10 @@ func renderIndex(w http.ResponseWriter, name string) {
 //      </body>
 //      </html>`, name)
 //	return
-  var hogeTmpl = template.Must(template.New("hoge").ParseFiles("templates/base.html", "templates/hoge.html"))
-  hogeTmpl.ExecuteTemplate(w, "base", "Hoge")
+//  var hogeTmpl = template.Must(template.New("hoge").ParseFiles("templates/template.html"))
+//  var hogeTmpl = template.Must(template.New("hoge").ParseFiles("templates/template.html", "templates/menu.html"))
+  var hogeTmpl = template.Must(template.New("hoge").ParseFiles("templates/template.html", "templates/menu.html", "templates/time.html"))
+  hogeTmpl.ExecuteTemplate(w, "template", "Hogeasdfasfdasdf")
 
 
 }
@@ -282,6 +290,7 @@ func main() {
 	http.HandleFunc("/login", loginPage)
 	http.HandleFunc("/logout", logoutPage)
 	http.HandleFunc("/", errorer)
+        http.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir("css"))))
 	var portString = fmt.Sprintf(":%d", *port)
 	err := http.ListenAndServe(portString, nil)
 	if err != nil {
