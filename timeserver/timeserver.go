@@ -19,13 +19,17 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
+	//"log"
 	"net/http"
 	"os"
 	"os/exec"
 	"sync"
 	"time"
+        //"../seelog"
+        //log "../seelog-master/"
 )
+
+import log "../seelog-master/"
 
 // Stores the cookie information
 var concurrentMap struct {
@@ -75,7 +79,8 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	printRequests(r)
-	log.Println("Error, url not found: These are not the URLs you are looking for.")
+	log.Info("Error, url not found: These are not the URLs you are looking for.")
+	//log.Println("Error, url not found: These are not the URLs you are looking for.")
 	w.WriteHeader(404)
 	fmt.Fprintf(w, `<html><head><style>
           p {font-size: xx-large}
@@ -144,15 +149,18 @@ func renderLogin(w http.ResponseWriter, r *http.Request) {
 func setCookie(w http.ResponseWriter, r *http.Request) *http.Cookie {
 	checkCookie, cookieError := r.Cookie("uuid")
 	if cookieError == nil {
-		log.Printf("Cookie is already set: %s", checkCookie.Value)
+		log.Infof("Cookie is already set: %s", checkCookie.Value)
+		//log.Printf("Cookie is already set: %s", checkCookie.Value)
 		return checkCookie
 	}
 	uuid, err := exec.Command("uuidgen").Output()
 	if err != nil {
-		log.Printf("Error something went wrong with uuidgen: %s \n", err)
+		log.Infof("Error something went wrong with uuidgen: %s \n", err)
+		//log.Printf("Error something went wrong with uuidgen: %s \n", err)
 		os.Exit(1)
 	}
-	log.Printf("Setting cookie with UUID: %s", uuid)
+	log.Infof("Setting cookie with UUID: %s", uuid)
+	//log.Printf("Setting cookie with UUID: %s", uuid)
 	uuidLen := len(uuid) - 1
 	uuidString := string(uuid[:uuidLen])
 	cookie := &http.Cookie{Name: "uuid", Value: uuidString, Expires: time.Now().Add(356 * 24 * time.Hour), HttpOnly: true}
@@ -168,13 +176,16 @@ func checkLogin(w http.ResponseWriter, r *http.Request) (bool, string) {
 	name := concurrentMap.cookieMap[cookie.Value]
 	concurrentMap.RUnlock()
 	if len(name) == 0 {
-		log.Println("There is no name stored for the UUID")
+		log.Info("There is no name stored for the UUID")
+		//log.Println("There is no name stored for the UUID")
 		return false, ""
 	} else if len(name) > 0 {
-		log.Printf("User is logged in with these values: name: %s. UUID: %s", name, cookie.Value)
+		log.Infof("User is logged in with these values: name: %s. UUID: %s", name, cookie.Value)
+		//log.Printf("User is logged in with these values: name: %s. UUID: %s", name, cookie.Value)
 		return true, name
 	} else {
-		log.Println("There is an unknown error")
+		log.Info("There is an unknown error")
+		//log.Println("There is an unknown error")
 		return false, ""
 	}
 }
@@ -192,7 +203,8 @@ func loginPage(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", 302)
 		return
 	} else {
-		log.Println("Error! User did not pass in a name to /login")
+		log.Info("Error! User did not pass in a name to /login")
+		//log.Println("Error! User did not pass in a name to /login")
 		renderNoNamePage(w)
 		return
 	}
@@ -206,7 +218,8 @@ func logoutPage(w http.ResponseWriter, r *http.Request) {
 		name := concurrentMap.cookieMap[cookie.Value]
 		delete(concurrentMap.cookieMap, cookie.Value)
 		concurrentMap.Unlock()
-		log.Printf("Deleting %s and %s from the server\n", cookie.Value, name)
+		log.Infof("Deleting %s and %s from the server\n", cookie.Value, name)
+		//log.Printf("Deleting %s and %s from the server\n", cookie.Value, name)
 	}
 	cookie := &http.Cookie{Name: "uuid", Value: "s", Expires: time.Unix(1, 0), HttpOnly: true}
 	http.SetCookie(w, cookie)
@@ -223,31 +236,38 @@ func logoutPage(w http.ResponseWriter, r *http.Request) {
 // Function for printing the request URL path
 func printRequests(r *http.Request) {
 	urlPath := r.URL.Path
-	log.Printf("Request url path: %s \n", urlPath)
+	log.Infof("Request url path: %s \n", urlPath)
+	//log.Printf("Request url path: %s \n", urlPath)
 }
 
 // Main handler that runs the server on the port or shows the version of the server
 func main() {
+        defer log.Flush()
 	port := flag.Int("port", 8080, "Set the server port, default port: 8080")
 	version := flag.Bool("V", false, "Shows the version of the timeserver")
 	logFile := flag.String("LogOutput", "", "This is the log output file name")
 	flag.Parse()
-	if len(*logFile) > 0 {
-		logFileName := fmt.Sprintf("%s.log", *logFile)
-		f, logerr := os.OpenFile(logFileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-		if logerr != nil {
-			fmt.Printf("Error opening the log file: %v", logerr)
-			os.Exit(1)
-		}
-		defer f.Close()
-		log.SetOutput(f)
-	}
-	log.Printf("Port flag is set as: %d\n", *port)
-	log.Printf("Version flag is set? %v\n", *version)
-	log.Printf("Log file flag is set as: %s\n", *logFile)
-	log.Println("Server has started up!")
+	//if len(*logFile) > 0 {
+	//	logFileName := fmt.Sprintf("%s.log", *logFile)
+	//	f, logerr := os.OpenFile(logFileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	//	if logerr != nil {
+	//		fmt.Printf("Error opening the log file: %v", logerr)
+	//		os.Exit(1)
+	//	}
+	//	defer f.Close()
+	//	log.SetOutput(f)
+	//}
+	log.Infof("Port flag is set as: %d\n", *port)
+	log.Infof("Version flag is set? %v\n", *version)
+	log.Infof("Log file flag is set as: %s\n", *logFile)
+	log.Info("Server has started up!")
+	//log.Printf("Port flag is set as: %d\n", *port)
+	//log.Printf("Version flag is set? %v\n", *version)
+	//log.Printf("Log file flag is set as: %s\n", *logFile)
+	//log.Println("Server has started up!")
 	if *version {
-		log.Println("Printing out the version")
+		log.Info("Printing out the version")
+		//log.Println("Printing out the version")
 		fmt.Println("Assignment Version: 2")
 		return
 	}
@@ -259,8 +279,10 @@ func main() {
 	var portString = fmt.Sprintf(":%d", *port)
 	err := http.ListenAndServe(portString, nil)
 	if err != nil {
-		log.Printf("Server Failed: %s\n", err)
+		log.Infof("Server Failed: %s\n", err)
+		//log.Printf("Server Failed: %s\n", err)
 		os.Exit(1)
 	}
-	log.Println("Server Closed")
+	log.Info("Server Closed")
+	//log.Println("Server Closed")
 }
