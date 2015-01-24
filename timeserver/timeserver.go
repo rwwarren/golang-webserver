@@ -24,6 +24,7 @@ import (
 	"os/exec"
 	"sync"
 	"time"
+        "text/template"
         log "../seelog-master/"
 )
 
@@ -107,12 +108,16 @@ func indexPage(w http.ResponseWriter, r *http.Request) {
 
 // Renders the page for a loggedin user
 func renderIndex(w http.ResponseWriter, name string) {
-	fmt.Fprintf(w, `<html>
-      <body>
-      Greetings, %s.
-      </body>
-      </html>`, name)
-	return
+//	fmt.Fprintf(w, `<html>
+//      <body>
+//      Greetings, %s.
+//      </body>
+//      </html>`, name)
+//	return
+  var hogeTmpl = template.Must(template.New("hoge").ParseFiles("templates/base.html", "templates/hoge.html"))
+  hogeTmpl.ExecuteTemplate(w, "base", "Hoge")
+
+
 }
 
 // Renders the page if there is no name passed into
