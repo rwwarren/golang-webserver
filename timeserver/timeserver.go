@@ -144,8 +144,12 @@ func renderIndex(w http.ResponseWriter, name string) {
 //	return
 //  var hogeTmpl = template.Must(template.New("hoge").ParseFiles("templates/template.html"))
 //  var hogeTmpl = template.Must(template.New("hoge").ParseFiles("templates/template.html", "templates/menu.html"))
-  var hogeTmpl = template.Must(template.New("hoge").ParseFiles("templates/template.html", "templates/menu.html", "templates/time.html"))
-  hogeTmpl.ExecuteTemplate(w, "template", "Hogeasdfasfdasdf")
+  var hogeTmpl = template.Must(template.New("hoge").ParseFiles("templates/template.html", "templates/menu.html", "templates/index.html"))
+  person := &Testing{
+    Name: name,
+  }
+  //hogeTmpl.ExecuteTemplate(w, "template", "Hogeasdfasfdasdf")
+  hogeTmpl.ExecuteTemplate(w, "template", person)
 
 
 }
@@ -153,27 +157,31 @@ func renderIndex(w http.ResponseWriter, name string) {
 // Renders the page if there is no name passed into
 // the login page
 func renderNoNamePage(w http.ResponseWriter) {
-	fmt.Fprintf(w, `<html>
-          <body>
-          C'mon, I need a name.
-          </body>
-          </html>`)
-	return
+//	fmt.Fprintf(w, `<html>
+//          <body>
+//          C'mon, I need a name.
+//          </body>
+//          </html>`)
+//	return
+  var logoutPage = template.Must(template.New("hoge").ParseFiles("templates/template.html", "templates/menu.html", "templates/noNamePage.html"))
+  logoutPage.ExecuteTemplate(w, "template", "")
 }
 
 // Renders the login page to the website
 func renderLogin(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, `<html>
-          <body>
-          <form action="login">
-            What is your name, Earthling?
-            <input type="text" name="name" size="50">
-            <input type="submit">
-          </form>
-          </p>
-          </body>
-          </html>`)
-	return
+//	fmt.Fprintf(w, `<html>
+//          <body>
+//          <form action="login">
+//            What is your name, Earthling?
+//            <input type="text" name="name" size="50">
+//            <input type="submit">
+//          </form>
+//          </p>
+//          </body>
+//          </html>`)
+//	return
+  var loginPage = template.Must(template.New("hoge").ParseFiles("templates/template.html", "templates/menu.html", "templates/loginPage.html"))
+  loginPage.ExecuteTemplate(w, "template", "")
 }
 
 // Returns the cookie for the server. Will set one if there is none
@@ -254,14 +262,16 @@ func logoutPage(w http.ResponseWriter, r *http.Request) {
 	}
 	cookie := &http.Cookie{Name: "uuid", Value: "s", Expires: time.Unix(1, 0), HttpOnly: true}
 	http.SetCookie(w, cookie)
-	fmt.Fprintf(w, `<html>
-          <head>
-          <META http-equiv="refresh" content="10;URL=/">
-          <body>
-          <p>Good-bye.</p>
-          </body>
-          </html>`)
-	return
+//	fmt.Fprintf(w, `<html>
+//          <head>
+//          <META http-equiv="refresh" content="10;URL=/">
+//          <body>
+//          <p>Good-bye.</p>
+//          </body>
+//          </html>`)
+//	return
+  var logoutPage = template.Must(template.New("hoge").ParseFiles("templates/template.html", "templates/menu.html", "templates/logout.html"))
+  logoutPage.ExecuteTemplate(w, "template", "")
 }
 
 // Function for printing the request URL path
