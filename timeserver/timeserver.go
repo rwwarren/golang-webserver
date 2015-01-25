@@ -56,39 +56,16 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 		personalString = fmt.Sprintf(", %s", name)
 	}
 	concurrentMap.RUnlock()
-//	fmt.Fprintf(w, `<html><head><style>
-//          p {font-size: xx-large}
-//          span.time {color: red}
-//          </style>
-//          </head>
-//          <body>
-//          <p>The time is now <span class="time">%s</span> (%s)%s.</p>
-//          </body>
-//          </html>`, time.Now().Local().Format(layout),
-//              time.Now().UTC().Format(UTClayout), personalString)
-//	return
-  //var hogeTmpl = template.New("template").ParseFiles("templates/template.html", "templates/menu.html", "templates/time.html")
   var hogeTmpl = template.Must(template.New("template").ParseFiles("templates/template.html", "templates/menu.html", "templates/time.html"))
-  fmt.Println(personalString)
   currentTime := time.Now().Local().Format(layout)
   UTCTime := time.Now().UTC().Format(UTClayout)
-  asdf := &Testing{
+  data := &Testing{
     Name: personalString,
     CurrentTime: currentTime,
     UTCtime: UTCTime,
   }
-  hogeTmpl.ExecuteTemplate(w, "template", asdf)
-  data := asdf
-  fmt.Println(asdf)
-  fmt.Println(data)
-  //hogeTmpl.ExecuteTemplate(w, "template", map[string]string{"Name":personalString})
-  //hogeTmpl.Execute(w, "template", data)
-  //hogeTmpl.ExecuteTemplate(w, "template", data)
-  //hogeTmpl.ExecuteTemplate(w, "template", *asdf)
-  //hogeTmpl.ExecuteTemplate(w, "template", "personalString")
-  //hogeTmpl.ExecuteTemplate(w, "template", personalString)
-  //hogeTmpl.ExecuteTemplate(w, "template", []string{time.Now().Local().Format(layout), time.Now().UTC().Format(UTClayout), personalString})
-  //hogeTmpl.ExecuteTemplate(w, "template", "Hoge")
+  hogeTmpl.ExecuteTemplate(w, "template", data)
+  return
 }
 
 type Testing struct {
@@ -104,19 +81,11 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	printRequests(r)
-	log.Info("Error, url not found: These are not the URLs you are looking for.\n")
-	//log.Println("Error, url not found: These are not the URLs you are looking for.")
+	log.Info("Error, url not found: These are not the URLs you are looking for.")
 	w.WriteHeader(404)
-	fmt.Fprintf(w, `<html><head><style>
-          p {font-size: xx-large}
-          span.time {color: red}
-          </style>
-          </head>
-          <body>
-          <p>These are not the URLs you're looking for.</p>
-          </body>
-          </html>`)
-	return
+  var errorPage = template.Must(template.New("template").ParseFiles("templates/template.html", "templates/menu.html", "templates/404.html"))
+  errorPage.ExecuteTemplate(w, "template", "")
+  return
 }
 
 // Checks the index page and will render the
@@ -136,50 +105,22 @@ func indexPage(w http.ResponseWriter, r *http.Request) {
 
 // Renders the page for a loggedin user
 func renderIndex(w http.ResponseWriter, name string) {
-//	fmt.Fprintf(w, `<html>
-//      <body>
-//      Greetings, %s.
-//      </body>
-//      </html>`, name)
-//	return
-//  var hogeTmpl = template.Must(template.New("hoge").ParseFiles("templates/template.html"))
-//  var hogeTmpl = template.Must(template.New("hoge").ParseFiles("templates/template.html", "templates/menu.html"))
-  var hogeTmpl = template.Must(template.New("hoge").ParseFiles("templates/template.html", "templates/menu.html", "templates/index.html"))
+  var indexPage = template.Must(template.New("hoge").ParseFiles("templates/template.html", "templates/menu.html", "templates/index.html"))
   person := &Testing{
     Name: name,
   }
-  //hogeTmpl.ExecuteTemplate(w, "template", "Hogeasdfasfdasdf")
-  hogeTmpl.ExecuteTemplate(w, "template", person)
-
-
+  indexPage.ExecuteTemplate(w, "template", person)
 }
 
 // Renders the page if there is no name passed into
 // the login page
 func renderNoNamePage(w http.ResponseWriter) {
-//	fmt.Fprintf(w, `<html>
-//          <body>
-//          C'mon, I need a name.
-//          </body>
-//          </html>`)
-//	return
   var logoutPage = template.Must(template.New("hoge").ParseFiles("templates/template.html", "templates/menu.html", "templates/noNamePage.html"))
   logoutPage.ExecuteTemplate(w, "template", "")
 }
 
 // Renders the login page to the website
 func renderLogin(w http.ResponseWriter, r *http.Request) {
-//	fmt.Fprintf(w, `<html>
-//          <body>
-//          <form action="login">
-//            What is your name, Earthling?
-//            <input type="text" name="name" size="50">
-//            <input type="submit">
-//          </form>
-//          </p>
-//          </body>
-//          </html>`)
-//	return
   var loginPage = template.Must(template.New("template").ParseFiles("templates/template.html", "templates/menu.html", "templates/loginPage.html"))
   loginPage.ExecuteTemplate(w, "template", "")
 }
@@ -189,17 +130,14 @@ func setCookie(w http.ResponseWriter, r *http.Request) *http.Cookie {
 	checkCookie, cookieError := r.Cookie("uuid")
 	if cookieError == nil {
 		log.Infof("Cookie is already set: %s", checkCookie.Value)
-		//log.Printf("Cookie is already set: %s", checkCookie.Value)
 		return checkCookie
 	}
 	uuid, err := exec.Command("uuidgen").Output()
 	if err != nil {
-		log.Infof("Error something went wrong with uuidgen: %s \n", err)
-		//log.Printf("Error something went wrong with uuidgen: %s \n", err)
+		log.Infof("Error something went wrong with uuidgen: %s", err)
 		os.Exit(1)
 	}
 	log.Infof("Setting cookie with UUID: %s", uuid)
-	//log.Printf("Setting cookie with UUID: %s", uuid)
 	uuidLen := len(uuid) - 1
 	uuidString := string(uuid[:uuidLen])
 	cookie := &http.Cookie{Name: "uuid", Value: uuidString, Expires: time.Now().Add(356 * 24 * time.Hour), HttpOnly: true}
@@ -216,15 +154,12 @@ func checkLogin(w http.ResponseWriter, r *http.Request) (bool, string) {
 	concurrentMap.RUnlock()
 	if len(name) == 0 {
 		log.Info("There is no name stored for the UUID")
-		//log.Println("There is no name stored for the UUID")
 		return false, ""
 	} else if len(name) > 0 {
 		log.Infof("User is logged in with these values: name: %s. UUID: %s", name, cookie.Value)
-		//log.Printf("User is logged in with these values: name: %s. UUID: %s", name, cookie.Value)
 		return true, name
 	} else {
 		log.Info("There is an unknown error")
-		//log.Println("There is an unknown error")
 		return false, ""
 	}
 }
@@ -243,7 +178,6 @@ func loginPage(w http.ResponseWriter, r *http.Request) {
 		return
 	} else {
 		log.Info("Error! User did not pass in a name to /login")
-		//log.Println("Error! User did not pass in a name to /login")
 		renderNoNamePage(w)
 		return
 	}
@@ -257,19 +191,10 @@ func logoutPage(w http.ResponseWriter, r *http.Request) {
 		name := concurrentMap.cookieMap[cookie.Value]
 		delete(concurrentMap.cookieMap, cookie.Value)
 		concurrentMap.Unlock()
-		log.Infof("Deleting %s and %s from the server\n", cookie.Value, name)
-		//log.Printf("Deleting %s and %s from the server\n", cookie.Value, name)
+		log.Infof("Deleting %s and %s from the server", cookie.Value, name)
 	}
 	cookie := &http.Cookie{Name: "uuid", Value: "s", Expires: time.Unix(1, 0), HttpOnly: true}
 	http.SetCookie(w, cookie)
-//	fmt.Fprintf(w, `<html>
-//          <head>
-//          <META http-equiv="refresh" content="10;URL=/">
-//          <body>
-//          <p>Good-bye.</p>
-//          </body>
-//          </html>`)
-//	return
   var logoutPage = template.Must(template.New("hoge").ParseFiles("templates/template.html", "templates/menu.html", "templates/logout.html"))
   logoutPage.ExecuteTemplate(w, "template", "")
 }
@@ -277,8 +202,7 @@ func logoutPage(w http.ResponseWriter, r *http.Request) {
 // Function for printing the request URL path
 func printRequests(r *http.Request) {
 	urlPath := r.URL.Path
-	log.Infof("Request url path: %s \n", urlPath)
-	//log.Printf("Request url path: %s \n", urlPath)
+	log.Infof("Request url path: %s", urlPath)
 }
 
 // Main handler that runs the server on the port or shows the version of the server
@@ -293,6 +217,7 @@ func main() {
               fmt.Printf("Log instantiation error: %s", logError)
         }
         log.ReplaceLogger(logger)
+        //TOD fix this
 	//if len(*logFile) > 0 {
 	//	logFileName := fmt.Sprintf("%s.log", *logFile)
 	//	f, logerr := os.OpenFile(logFileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
@@ -303,17 +228,12 @@ func main() {
 	//	defer f.Close()
 	//	log.SetOutput(f)
 	//}
-	log.Infof("Port flag is set as: %d\n", *port)
-	log.Infof("Version flag is set? %v\n", *version)
-	log.Infof("Log file flag is set as: %s\n", *logFile)
+	log.Infof("Port flag is set as: %d", *port)
+	log.Infof("Version flag is set? %v", *version)
+	log.Infof("Log file flag is set as: %s", *logFile)
 	log.Info("Server has started up!")
-	//log.Printf("Port flag is set as: %d\n", *port)
-	//log.Printf("Version flag is set? %v\n", *version)
-	//log.Printf("Log file flag is set as: %s\n", *logFile)
-	//log.Println("Server has started up!")
 	if *version {
 		log.Info("Printing out the version")
-		//log.Println("Printing out the version")
 		fmt.Println("Assignment Version: 2")
 		return
 	}
@@ -326,10 +246,8 @@ func main() {
 	var portString = fmt.Sprintf(":%d", *port)
 	err := http.ListenAndServe(portString, nil)
 	if err != nil {
-		log.Infof("Server Failed: %s\n", err)
-		//log.Printf("Server Failed: %s\n", err)
+		log.Infof("Server Failed: %s", err)
 		os.Exit(1)
 	}
 	log.Info("Server Closed")
-	//log.Println("Server Closed")
 }

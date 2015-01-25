@@ -4,7 +4,7 @@
     <!-- <console formatid="std:json"/> -->
   </outputs>
   <formats>
-    <format id="normal" format="[%LEVEL] %Date %Time: %Msg"/>
+    <format id="normal" format="[%LEVEL] %Date %Time: %Msg%n"/>
   </formats>
 </seelog>
 <!-- 2015/01/23 18:33:41 -->

@@ -32,6 +32,10 @@ fmt:
 	@echo "go fmt"
 	@$(GOLOC) fmt
 
+test:
+	@echo "go test"
+	@$(GOLOC) test
+
 install:
 	@echo "go build"
 	@$(GOLOC) build
