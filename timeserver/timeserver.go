@@ -180,7 +180,7 @@ func renderLogin(w http.ResponseWriter, r *http.Request) {
 //          </body>
 //          </html>`)
 //	return
-  var loginPage = template.Must(template.New("hoge").ParseFiles("templates/template.html", "templates/menu.html", "templates/loginPage.html"))
+  var loginPage = template.Must(template.New("template").ParseFiles("templates/template.html", "templates/menu.html", "templates/loginPage.html"))
   loginPage.ExecuteTemplate(w, "template", "")
 }
 
