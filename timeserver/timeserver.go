@@ -25,7 +25,9 @@ import (
 	"sync"
 	"time"
         "text/template"
+        //"http/template"
         log "../seelog-master/"
+        "../cookieManagement/"
 )
 
 // Stores the cookie information
@@ -249,5 +251,9 @@ func main() {
 		log.Infof("Server Failed: %s", err)
 		os.Exit(1)
 	}
+        cookieManager := CookieManagement.NewCookieManager()
+        //cookieManager := NewCookieManager()
+        //cookieManager := new(CookieManager)
+        fmt.Println(cookieManager)
 	log.Info("Server Closed")
 }
