@@ -1,11 +1,10 @@
 <seelog>
   <outputs>
     <console formatid="normal"/>
-    <!-- <console formatid="colored"/> -->
-    <!-- <console formatid="std:json"/> -->
+    <file formatid="file" path="access.log"/>
   </outputs>
   <formats>
     <format id="normal" format="[%EscM(32)%LEVEL%EscM(39)] %Date %Time: %Msg%n"/>
-    <format id="colored"  format="%EscM(46)%Level%EscM(49) %Msg%n%EscM(0)"/>
+    <format id="file" format="[%LEVEL] %Date %Time: %Msg%n"/>
   </formats>
 </seelog>

@@ -1,0 +1,13 @@
+<seelog minlevel="debug">
+  <outputs>
+    <console formatid="normal"/>
+    <file formatid="normal" path="access.log"/>
+    <filter levels="debug">
+      <file path="debug.log"/>
+    </filter>
+  </outputs>
+  <formats>
+    <format id="normal" format="%Date%t %Time%t %LEVEL%t File: %File%t Function: %Func%t Line #%Line:%t %Msg%n"/>
+  </formats>
+</seelog>
+

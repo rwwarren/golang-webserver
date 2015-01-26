@@ -215,7 +215,7 @@ func main() {
         defer log.Flush()
 	port := flag.Int("port", 8080, "Set the server port, default port: 8080")
 	version := flag.Bool("V", false, "Shows the version of the timeserver")
-	logFile := flag.String("LogConfig", "logConfig", "This is the logger configuration file")
+	logFile := flag.String("log", "logConfig", "This is the logger configuration file")
 	templatesFlag := flag.String("templates", "templates/", "This is the templates folder name")
 	//logFile := flag.String("LogOutput", "", "This is the log output file name")
 	flag.Parse()
