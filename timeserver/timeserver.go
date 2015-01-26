@@ -12,7 +12,8 @@
 // There are command line options.
 // "--port PORT_NUMBER" will change the port.
 // "-V" will show the version and then quit.
-// "-LogOutput FILENAME" pass in the log file and it will output to FILENAME.log
+// "-log FILENAME" pass in the log configuration file and it
+// will load it from etc/FILENAME.xml
 
 package main
 
@@ -24,7 +25,6 @@ import (
 	"os/exec"
 	"sync"
 	"time"
-	//"text/template"
 	"../cookieManagement/"
 	log "../seelog-master/"
 	"html/template"
@@ -207,6 +207,14 @@ func logoutPage(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, cookie)
 	var logoutPage = template.Must(template.New("logout").ParseFiles("templates/template.html", "templates/menu.html", "templates/logout.html"))
 	logoutPage.ExecuteTemplate(w, "template", "")
+	//cookieManager := CookieManagement.NewCookieManager()
+	//CookieManagement.SetCookie(w, r)
+        //fmt.Println(cookieManager)
+        CookieManagement.SetName("asdf", "Ryan")
+        fmt.Println(CookieManagement.GetName("asdf"))
+        //fmt.Println(CookieManagement.GetMap())
+	//cookieManager := CookieManagement.SetCookie(w, r)
+        //cookieManager.SetCookie(w, r)
 }
 
 // Function for printing the request URL path
@@ -239,7 +247,8 @@ func main() {
 		fmt.Println("Assignment Version: 2")
 		return
 	}
-	cookieManager := CookieManagement.NewCookieManager()
+	//cookieManager := CookieManagement.NewCookieManager()
+        //cookieManager.SetCookie()
 	http.HandleFunc("/time", timeHandler)
 	http.HandleFunc("/index.html", indexPage)
 	http.HandleFunc("/login", loginPage)
@@ -255,6 +264,6 @@ func main() {
 	//cookieManager := CookieManagement.NewCookieManager()
 	//cookieManager := NewCookieManager()
 	//cookieManager := new(CookieManager)
-	fmt.Println(cookieManager)
+	//fmt.Println(cookieManager)
 	log.Info("Server Closed")
 }
