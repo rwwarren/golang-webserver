@@ -2,5 +2,7 @@
 - template
 - header and footer
 - cookie management
-- Log messages
+- Log messages √
 - UTC time √
+- Update readme
+- Update makefile

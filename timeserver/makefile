@@ -3,8 +3,9 @@
 # "install", "run"
 # GOLOC is the location of the go executable
 # This also takes PORT for the port
-# Another thing is LOG and filename
-# for the logfile name (which appends .log)
+# Another thing is LOG and config filename
+# for the logfile name (which appends .xml)
+# also prepends "etc/" for the file location
 # Lastly will take V for version
 
 GOROOT="/usr/apps/go/hg/"
@@ -15,7 +16,7 @@ ifdef BREW
 	GOLOC=$(shell which go)
 endif
 ifdef LOG
-	LOGFILE="--LogOutput $(LOG)"
+	LOGFILE="--log $(LOG)"
 endif
 
 

@@ -51,6 +51,7 @@ func init() {
 		sync.RWMutex
 		cookieMap map[string]string
 	}{cookieMap: make(map[string]string)}
+        log.Debug("Initalizing the map")
 }
 
 // Handles the timeserver which shows the current time
@@ -65,9 +66,10 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 	if len(concurrentMap.cookieMap[cookie.Value]) > 0 {
 		name := concurrentMap.cookieMap[cookie.Value]
 		personalString = fmt.Sprintf(", %s", name)
+                log.Debugf("User is logged in as: %s", name)
 	}
 	concurrentMap.RUnlock()
-  var hogeTmpl = template.Must(template.New("template").ParseFiles("templates/template.html", "templates/menu.html", "templates/time.html"))
+  var timeTmpl = template.Must(template.New("time").ParseFiles("templates/template.html", "templates/menu.html", "templates/time.html"))
   currentTime := time.Now().Local().Format(layout)
   UTCTime := time.Now().UTC().Format(UTClayout)
   data := &Testing{
@@ -75,7 +77,7 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
     CurrentTime: currentTime,
     UTCtime: UTCTime,
   }
-  hogeTmpl.ExecuteTemplate(w, "template", data)
+  timeTmpl.ExecuteTemplate(w, "template", data)
   return
 }
 
@@ -88,7 +90,7 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 	printRequests(r)
 	log.Info("Error, url not found: These are not the URLs you are looking for.")
 	w.WriteHeader(404)
-  var errorPage = template.Must(template.New("template").ParseFiles("templates/template.html", "templates/menu.html", "templates/404.html"))
+  var errorPage = template.Must(template.New("ErrorPage").ParseFiles("templates/template.html", "templates/menu.html", "templates/404.html"))
   errorPage.ExecuteTemplate(w, "template", "")
   return
 }
@@ -99,13 +101,14 @@ func indexPage(w http.ResponseWriter, r *http.Request) {
 	printRequests(r)
 	isLoggedIn, name := checkLogin(w, r)
 	if isLoggedIn {
+                log.Debug("User is loggedin, going to loggedin page")
 		renderIndex(w, name)
 		return
 	} else {
+                log.Debug("User is not loggedin, going to login page")
 		renderLogin(w, r)
 		return
 	}
-
 }
 
 // Renders the page for a loggedin user
@@ -126,7 +129,7 @@ func renderNoNamePage(w http.ResponseWriter) {
 
 // Renders the login page to the website
 func renderLogin(w http.ResponseWriter, r *http.Request) {
-  var loginPage = template.Must(template.New("template").ParseFiles("templates/template.html", "templates/menu.html", "templates/loginPage.html"))
+  var loginPage = template.Must(template.New("Login").ParseFiles("templates/template.html", "templates/menu.html", "templates/loginPage.html"))
   loginPage.ExecuteTemplate(w, "template", "")
 }
 
@@ -139,7 +142,7 @@ func setCookie(w http.ResponseWriter, r *http.Request) *http.Cookie {
 	}
 	uuid, err := exec.Command("uuidgen").Output()
 	if err != nil {
-		log.Infof("Error something went wrong with uuidgen: %s", err)
+		log.Criticalf("Error something went wrong with uuidgen: %s", err)
 		os.Exit(1)
 	}
 	log.Infof("Setting cookie with UUID: %s", uuid)
@@ -164,7 +167,7 @@ func checkLogin(w http.ResponseWriter, r *http.Request) (bool, string) {
 		log.Infof("User is logged in with these values: name: %s. UUID: %s", name, cookie.Value)
 		return true, name
 	} else {
-		log.Info("There is an unknown error")
+		log.Critical("There is an unknown error")
 		return false, ""
 	}
 }
@@ -179,6 +182,7 @@ func loginPage(w http.ResponseWriter, r *http.Request) {
 		concurrentMap.Lock()
 		concurrentMap.cookieMap[cookie.Value] = formName
 		concurrentMap.Unlock()
+                log.Debugf("Name passed in: %s", formName)
 		http.Redirect(w, r, "/", 302)
 		return
 	} else {
@@ -191,16 +195,17 @@ func loginPage(w http.ResponseWriter, r *http.Request) {
 // Here is the logout page that will remove the cookies assosiated with the user
 func logoutPage(w http.ResponseWriter, r *http.Request) {
 	printRequests(r)
+        //TODO add cookie management part
 	if cookie, err := r.Cookie("uuid"); err == nil {
 		concurrentMap.Lock()
 		name := concurrentMap.cookieMap[cookie.Value]
 		delete(concurrentMap.cookieMap, cookie.Value)
 		concurrentMap.Unlock()
-		log.Infof("Deleting %s and %s from the server", cookie.Value, name)
+		log.Debugf("Deleting %s and %s from the server", cookie.Value, name)
 	}
 	cookie := &http.Cookie{Name: "uuid", Value: "s", Expires: time.Unix(1, 0), HttpOnly: true}
 	http.SetCookie(w, cookie)
-  var logoutPage = template.Must(template.New("hoge").ParseFiles("templates/template.html", "templates/menu.html", "templates/logout.html"))
+  var logoutPage = template.Must(template.New("logout").ParseFiles("templates/template.html", "templates/menu.html", "templates/logout.html"))
   logoutPage.ExecuteTemplate(w, "template", "")
 }
 
@@ -226,17 +231,6 @@ func main() {
               fmt.Printf("Log instantiation error: %s", logError)
         }
         log.ReplaceLogger(logger)
-        //TOD fix this
-	//if len(*logFile) > 0 {
-	//	logFileName := fmt.Sprintf("%s.log", *logFile)
-	//	f, logerr := os.OpenFile(logFileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	//	if logerr != nil {
-	//		fmt.Printf("Error opening the log file: %v", logerr)
-	//		os.Exit(1)
-	//	}
-	//	defer f.Close()
-	//	log.SetOutput(f)
-	//}
 	log.Infof("Port flag is set as: %d", *port)
 	log.Infof("Version flag is set? %v", *version)
 	log.Infof("Log file flag is set as: %s", *logFile)
@@ -255,7 +249,7 @@ func main() {
 	var portString = fmt.Sprintf(":%d", *port)
 	err := http.ListenAndServe(portString, nil)
 	if err != nil {
-		log.Infof("Server Failed: %s", err)
+		log.Errorf("Server Failed: %s", err)
 		os.Exit(1)
 	}
         cookieManager := CookieManagement.NewCookieManager()

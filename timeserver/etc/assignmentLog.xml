@@ -1,7 +1,7 @@
 <seelog minlevel="debug">
-  <outputs>
-    <console formatid="normal"/>
-    <file formatid="normal" path="access.log"/>
+  <outputs formatid="normal">
+    <console/>
+    <file path="access.log"/>
     <filter levels="debug">
       <file path="debug.log"/>
     </filter>

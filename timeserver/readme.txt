@@ -17,6 +17,7 @@
     print     Prints the GOROOT
     install   Runs "go build" to compile the go program
     run       Runs the compiled go build
+    test      Runs go test
 
   Variables:
     BREW      Set to anything if go is set up properaly in the $PATH
@@ -26,7 +27,7 @@
     GOROOT    If unset, then GOROOT will default to "/usr/apps/go/hg/"
               otherwise set it to the location where go is installed
     PORT      Set the port for the server to run on
-    LOG       Set the log filename for the logs to go to
+    LOG       Set the log file config name
     V         Will display the server version and quit
 
 
