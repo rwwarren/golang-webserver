@@ -1,12 +1,11 @@
-
 package CookieManagement
 
 import (
-  "testing"
-  "os"
+	"os"
+	"testing"
 )
 
-func TestCookieManagement(t *testing.M){
-  os.Exit(t.Run())
+func TestCookieManagement(t *testing.M) {
+	os.Exit(t.Run())
 
 }

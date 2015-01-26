@@ -24,10 +24,10 @@ import (
 	"os/exec"
 	"sync"
 	"time"
-        "text/template"
-        //"http/template"
-        log "../seelog-master/"
-        "../cookieManagement/"
+	//"text/template"
+	"../cookieManagement/"
+	log "../seelog-master/"
+	"html/template"
 )
 
 // Stores the cookie information
@@ -38,9 +38,9 @@ var concurrentMap struct {
 
 //TODO rename this
 type Testing struct {
-  Name          string
-  CurrentTime   string
-  UTCtime       string
+	Name        string
+	CurrentTime string
+	UTCtime     string
 }
 
 var templatesFolder string
@@ -51,7 +51,7 @@ func init() {
 		sync.RWMutex
 		cookieMap map[string]string
 	}{cookieMap: make(map[string]string)}
-        log.Debug("Initalizing the map")
+	log.Debug("Initalizing the map")
 }
 
 // Handles the timeserver which shows the current time
@@ -66,19 +66,19 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 	if len(concurrentMap.cookieMap[cookie.Value]) > 0 {
 		name := concurrentMap.cookieMap[cookie.Value]
 		personalString = fmt.Sprintf(", %s", name)
-                log.Debugf("User is logged in as: %s", name)
+		log.Debugf("User is logged in as: %s", name)
 	}
 	concurrentMap.RUnlock()
-  var timeTmpl = template.Must(template.New("time").ParseFiles("templates/template.html", "templates/menu.html", "templates/time.html"))
-  currentTime := time.Now().Local().Format(layout)
-  UTCTime := time.Now().UTC().Format(UTClayout)
-  data := &Testing{
-    Name: personalString,
-    CurrentTime: currentTime,
-    UTCtime: UTCTime,
-  }
-  timeTmpl.ExecuteTemplate(w, "template", data)
-  return
+	var timeTmpl = template.Must(template.New("time").ParseFiles("templates/template.html", "templates/menu.html", "templates/time.html"))
+	currentTime := time.Now().Local().Format(layout)
+	UTCTime := time.Now().UTC().Format(UTClayout)
+	data := &Testing{
+		Name:        personalString,
+		CurrentTime: currentTime,
+		UTCtime:     UTCTime,
+	}
+	timeTmpl.ExecuteTemplate(w, "template", data)
+	return
 }
 
 // Handles errors for when the page is not found
@@ -90,9 +90,9 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 	printRequests(r)
 	log.Info("Error, url not found: These are not the URLs you are looking for.")
 	w.WriteHeader(404)
-  var errorPage = template.Must(template.New("ErrorPage").ParseFiles("templates/template.html", "templates/menu.html", "templates/404.html"))
-  errorPage.ExecuteTemplate(w, "template", "")
-  return
+	var errorPage = template.Must(template.New("ErrorPage").ParseFiles("templates/template.html", "templates/menu.html", "templates/404.html"))
+	errorPage.ExecuteTemplate(w, "template", "")
+	return
 }
 
 // Checks the index page and will render the
@@ -101,11 +101,11 @@ func indexPage(w http.ResponseWriter, r *http.Request) {
 	printRequests(r)
 	isLoggedIn, name := checkLogin(w, r)
 	if isLoggedIn {
-                log.Debug("User is loggedin, going to loggedin page")
+		log.Debug("User is loggedin, going to loggedin page")
 		renderIndex(w, name)
 		return
 	} else {
-                log.Debug("User is not loggedin, going to login page")
+		log.Debug("User is not loggedin, going to login page")
 		renderLogin(w, r)
 		return
 	}
@@ -113,24 +113,24 @@ func indexPage(w http.ResponseWriter, r *http.Request) {
 
 // Renders the page for a loggedin user
 func renderIndex(w http.ResponseWriter, name string) {
-  var indexPage = template.Must(template.New("hoge").ParseFiles("templates/template.html", "templates/menu.html", "templates/index.html"))
-  person := &Testing{
-    Name: name,
-  }
-  indexPage.ExecuteTemplate(w, "template", person)
+	var indexPage = template.Must(template.New("hoge").ParseFiles("templates/template.html", "templates/menu.html", "templates/index.html"))
+	person := &Testing{
+		Name: name,
+	}
+	indexPage.ExecuteTemplate(w, "template", person)
 }
 
 // Renders the page if there is no name passed into
 // the login page
 func renderNoNamePage(w http.ResponseWriter) {
-  var logoutPage = template.Must(template.New("NoNamePage").ParseFiles("templates/template.html", "templates/menu.html", "templates/noNamePage.html"))
-  logoutPage.ExecuteTemplate(w, "template", "")
+	var logoutPage = template.Must(template.New("NoNamePage").ParseFiles("templates/template.html", "templates/menu.html", "templates/noNamePage.html"))
+	logoutPage.ExecuteTemplate(w, "template", "")
 }
 
 // Renders the login page to the website
 func renderLogin(w http.ResponseWriter, r *http.Request) {
-  var loginPage = template.Must(template.New("Login").ParseFiles("templates/template.html", "templates/menu.html", "templates/loginPage.html"))
-  loginPage.ExecuteTemplate(w, "template", "")
+	var loginPage = template.Must(template.New("Login").ParseFiles("templates/template.html", "templates/menu.html", "templates/loginPage.html"))
+	loginPage.ExecuteTemplate(w, "template", "")
 }
 
 // Returns the cookie for the server. Will set one if there is none
@@ -182,7 +182,7 @@ func loginPage(w http.ResponseWriter, r *http.Request) {
 		concurrentMap.Lock()
 		concurrentMap.cookieMap[cookie.Value] = formName
 		concurrentMap.Unlock()
-                log.Debugf("Name passed in: %s", formName)
+		log.Debugf("Name passed in: %s", formName)
 		http.Redirect(w, r, "/", 302)
 		return
 	} else {
@@ -195,7 +195,7 @@ func loginPage(w http.ResponseWriter, r *http.Request) {
 // Here is the logout page that will remove the cookies assosiated with the user
 func logoutPage(w http.ResponseWriter, r *http.Request) {
 	printRequests(r)
-        //TODO add cookie management part
+	//TODO add cookie management part
 	if cookie, err := r.Cookie("uuid"); err == nil {
 		concurrentMap.Lock()
 		name := concurrentMap.cookieMap[cookie.Value]
@@ -205,8 +205,8 @@ func logoutPage(w http.ResponseWriter, r *http.Request) {
 	}
 	cookie := &http.Cookie{Name: "uuid", Value: "s", Expires: time.Unix(1, 0), HttpOnly: true}
 	http.SetCookie(w, cookie)
-  var logoutPage = template.Must(template.New("logout").ParseFiles("templates/template.html", "templates/menu.html", "templates/logout.html"))
-  logoutPage.ExecuteTemplate(w, "template", "")
+	var logoutPage = template.Must(template.New("logout").ParseFiles("templates/template.html", "templates/menu.html", "templates/logout.html"))
+	logoutPage.ExecuteTemplate(w, "template", "")
 }
 
 // Function for printing the request URL path
@@ -217,20 +217,19 @@ func printRequests(r *http.Request) {
 
 // Main handler that runs the server on the port or shows the version of the server
 func main() {
-        defer log.Flush()
+	defer log.Flush()
 	port := flag.Int("port", 8080, "Set the server port, default port: 8080")
 	version := flag.Bool("V", false, "Shows the version of the timeserver")
 	logFile := flag.String("log", "logConfig", "This is the logger configuration file")
 	templatesFlag := flag.String("templates", "templates/", "This is the templates folder name")
-	//logFile := flag.String("LogOutput", "", "This is the log output file name")
 	flag.Parse()
-        templatesFolder = *templatesFlag
-        logFileName := fmt.Sprintf("etc/%s.xml", *logFile)
-        logger, logError := log.LoggerFromConfigAsFile(logFileName)
-        if logError != nil {
-              fmt.Printf("Log instantiation error: %s", logError)
-        }
-        log.ReplaceLogger(logger)
+	templatesFolder = *templatesFlag
+	logFileName := fmt.Sprintf("etc/%s.xml", *logFile)
+	logger, logError := log.LoggerFromConfigAsFile(logFileName)
+	if logError != nil {
+		fmt.Printf("Log instantiation error: %s", logError)
+	}
+	log.ReplaceLogger(logger)
 	log.Infof("Port flag is set as: %d", *port)
 	log.Infof("Version flag is set? %v", *version)
 	log.Infof("Log file flag is set as: %s", *logFile)
@@ -240,21 +239,22 @@ func main() {
 		fmt.Println("Assignment Version: 2")
 		return
 	}
+	cookieManager := CookieManagement.NewCookieManager()
 	http.HandleFunc("/time", timeHandler)
 	http.HandleFunc("/index.html", indexPage)
 	http.HandleFunc("/login", loginPage)
 	http.HandleFunc("/logout", logoutPage)
 	http.HandleFunc("/", errorer)
-        http.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir("css"))))
+	http.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir("css"))))
 	var portString = fmt.Sprintf(":%d", *port)
 	err := http.ListenAndServe(portString, nil)
 	if err != nil {
 		log.Errorf("Server Failed: %s", err)
 		os.Exit(1)
 	}
-        cookieManager := CookieManagement.NewCookieManager()
-        //cookieManager := NewCookieManager()
-        //cookieManager := new(CookieManager)
-        fmt.Println(cookieManager)
+	//cookieManager := CookieManagement.NewCookieManager()
+	//cookieManager := NewCookieManager()
+	//cookieManager := new(CookieManager)
+	fmt.Println(cookieManager)
 	log.Info("Server Closed")
 }

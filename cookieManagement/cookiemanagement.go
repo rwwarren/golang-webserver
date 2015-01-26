@@ -1,24 +1,22 @@
-
 package CookieManagement
 
 import (
+	log "../seelog-master/"
 	"net/http"
 	"os"
 	"os/exec"
 	"time"
-        log "../seelog-master/"
 )
 
-
 type CookieManager struct {
-      Name string
-      Num int
+	Name string
+	Num  int
 }
 
 func NewCookieManager() *CookieManager {
-          return &CookieManager{}
+	log.Info("testing from cookie Manager")
+	return &CookieManager{}
 }
-
 
 func setCookie(w http.ResponseWriter, r *http.Request) *http.Cookie {
 	checkCookie, cookieError := r.Cookie("uuid")

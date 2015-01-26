@@ -1,13 +1,11 @@
-
 package main
 
 import (
-  "testing"
-  "os"
+	"os"
+	"testing"
 )
 
-func TestMain(t *testing.M){
-  os.Exit(t.Run())
+func TestMain(t *testing.M) {
+	os.Exit(t.Run())
 
 }
-
