@@ -36,6 +36,15 @@ var concurrentMap struct {
 	cookieMap map[string]string
 }
 
+//TODO rename this
+type Testing struct {
+  Name          string
+  CurrentTime   string
+  UTCtime       string
+}
+
+var templatesFolder string
+
 // Intitalizes the concurrentMap
 func init() {
 	concurrentMap = struct {
@@ -68,12 +77,6 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
   }
   hogeTmpl.ExecuteTemplate(w, "template", data)
   return
-}
-
-type Testing struct {
-  Name          string
-  CurrentTime   string
-  UTCtime       string
 }
 
 // Handles errors for when the page is not found
@@ -117,7 +120,7 @@ func renderIndex(w http.ResponseWriter, name string) {
 // Renders the page if there is no name passed into
 // the login page
 func renderNoNamePage(w http.ResponseWriter) {
-  var logoutPage = template.Must(template.New("hoge").ParseFiles("templates/template.html", "templates/menu.html", "templates/noNamePage.html"))
+  var logoutPage = template.Must(template.New("NoNamePage").ParseFiles("templates/template.html", "templates/menu.html", "templates/noNamePage.html"))
   logoutPage.ExecuteTemplate(w, "template", "")
 }
 
@@ -212,9 +215,13 @@ func main() {
         defer log.Flush()
 	port := flag.Int("port", 8080, "Set the server port, default port: 8080")
 	version := flag.Bool("V", false, "Shows the version of the timeserver")
-	logFile := flag.String("LogOutput", "", "This is the log output file name")
+	logFile := flag.String("LogConfig", "logConfig", "This is the logger configuration file")
+	templatesFlag := flag.String("templates", "templates/", "This is the templates folder name")
+	//logFile := flag.String("LogOutput", "", "This is the log output file name")
 	flag.Parse()
-        logger, logError := log.LoggerFromConfigAsFile("logConfig.xml")
+        templatesFolder = *templatesFlag
+        logFileName := fmt.Sprintf("etc/%s.xml", *logFile)
+        logger, logError := log.LoggerFromConfigAsFile(logFileName)
         if logError != nil {
               fmt.Printf("Log instantiation error: %s", logError)
         }
