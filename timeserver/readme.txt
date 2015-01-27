@@ -30,7 +30,8 @@
     GOROOT    If unset, then GOROOT will default to "/usr/apps/go/hg/"
               otherwise set it to the location where go is installed
     PORT      Set the port for the server to run on
-    LOG       Set the log file config name
+    LOG       Set the log file config name. Set the LOG to "assignmentLog"
+              for the one based on the project specs
     TEMPLATE  Set the template directory location
     V         Will display the server version and quit
 
