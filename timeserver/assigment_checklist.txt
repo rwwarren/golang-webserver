@@ -1,8 +1,8 @@
 - new look and feel (see below)
-- template
+- template √
 - header and footer √
 - cookie management √
 - Log messages √
 - UTC time √
-- Update readme
-- Update makefile
+- Update readme √
+- Update makefile √
