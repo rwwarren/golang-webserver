@@ -208,6 +208,12 @@ func main() {
 	}
 	log.ReplaceLogger(logger)
 	log.Debug("Logger intitalized")
+	log.Trace("Testing trace")
+	log.Debug("Testing debug")
+	log.Info("Testing info")
+	log.Warn("Testing warn")
+	log.Error("Testing error")
+	log.Critical("Testing critical")
 	log.Infof("Port flag is set as: %d", *port)
 	log.Infof("Version flag is set? %v", *version)
 	log.Infof("Log config file flag is set as: %s", *logFile)
