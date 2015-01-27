@@ -1,5 +1,5 @@
 
-  490 Assignment 1 By Ryan Warren
+  490 Assignment 3 By Ryan Warren
   Here is the README and instructions for it
 
   Usage: make [options] [variables]

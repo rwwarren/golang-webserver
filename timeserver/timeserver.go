@@ -215,7 +215,7 @@ func main() {
 	log.Info("Server has started up!")
 	if *version {
 		log.Info("Printing out the version")
-		fmt.Println("Assignment Version: 2")
+		fmt.Println("Assignment Version: 3")
 		return
 	}
 	http.HandleFunc("/time", timeHandler)
