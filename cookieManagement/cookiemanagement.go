@@ -21,7 +21,7 @@ func SetCookie(w http.ResponseWriter, r *http.Request) *http.Cookie {
 	}
 	uuid, err := exec.Command("uuidgen").Output()
 	if err != nil {
-    		log.Infof("Error something went wrong with uuidgen: %s", err)
+		log.Infof("Error something went wrong with uuidgen: %s", err)
 		os.Exit(1)
 	}
 	uuidLen := len(uuid) - 1

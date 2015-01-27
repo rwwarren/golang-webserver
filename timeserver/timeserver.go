@@ -18,15 +18,15 @@
 package main
 
 import (
+	"../cookieManagement/"
+	log "../seelog-master/"
 	"flag"
 	"fmt"
+	"html/template"
 	"net/http"
 	"os"
 	"sync"
 	"time"
-	"../cookieManagement/"
-	log "../seelog-master/"
-	"html/template"
 )
 
 // Stores the cookie information
@@ -45,7 +45,7 @@ var templatesFolder string
 
 // Intitalizes the concurrentMap
 func init() {
-        log.Debug("Logger not initialized yet")
+	log.Debug("Logger not initialized yet")
 	concurrentMap = struct {
 		sync.RWMutex
 		cookieMap map[string]string
@@ -174,7 +174,7 @@ func loginPage(w http.ResponseWriter, r *http.Request) {
 // Here is the logout page that will remove the cookies assosiated with the user
 func logoutPage(w http.ResponseWriter, r *http.Request) {
 	printRequests(r)
-        cookie := CookieManagement.SetCookie(w,r)
+	cookie := CookieManagement.SetCookie(w, r)
 	concurrentMap.Lock()
 	name := concurrentMap.cookieMap[cookie.Value]
 	delete(concurrentMap.cookieMap, cookie.Value)
@@ -207,7 +207,7 @@ func main() {
 		fmt.Printf("Log instantiation error: %s", logError)
 	}
 	log.ReplaceLogger(logger)
-        log.Debug("Logger intitalized")
+	log.Debug("Logger intitalized")
 	log.Infof("Port flag is set as: %d", *port)
 	log.Infof("Version flag is set? %v", *version)
 	log.Infof("Log config file flag is set as: %s", *logFile)
