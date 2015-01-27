@@ -35,8 +35,7 @@ var concurrentMap struct {
 	cookieMap map[string]string
 }
 
-//TODO rename this
-type Testing struct {
+type PageInformation struct {
 	Name        string
 	CurrentTime string
 	UTCtime     string
@@ -46,6 +45,7 @@ var templatesFolder string
 
 // Intitalizes the concurrentMap
 func init() {
+        log.Debug("Logger not initialized yet")
 	concurrentMap = struct {
 		sync.RWMutex
 		cookieMap map[string]string
@@ -71,7 +71,7 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 	var timeTmpl = template.Must(template.New("time").ParseFiles("templates/template.html", "templates/menu.html", "templates/time.html"))
 	currentTime := time.Now().Local().Format(layout)
 	UTCTime := time.Now().UTC().Format(UTClayout)
-	data := &Testing{
+	data := &PageInformation{
 		Name:        personalString,
 		CurrentTime: currentTime,
 		UTCtime:     UTCTime,
@@ -113,7 +113,7 @@ func indexPage(w http.ResponseWriter, r *http.Request) {
 // Renders the page for a loggedin user
 func renderIndex(w http.ResponseWriter, name string) {
 	var indexPage = template.Must(template.New("hoge").ParseFiles("templates/template.html", "templates/menu.html", "templates/index.html"))
-	person := &Testing{
+	person := &PageInformation{
 		Name: name,
 	}
 	indexPage.ExecuteTemplate(w, "template", person)
@@ -131,26 +131,6 @@ func renderLogin(w http.ResponseWriter, r *http.Request) {
 	var loginPage = template.Must(template.New("Login").ParseFiles("templates/template.html", "templates/menu.html", "templates/loginPage.html"))
 	loginPage.ExecuteTemplate(w, "template", "")
 }
-
-//// Returns the cookie for the server. Will set one if there is none
-//func setCookie(w http.ResponseWriter, r *http.Request) *http.Cookie {
-//	checkCookie, cookieError := r.Cookie("uuid")
-//	if cookieError == nil {
-//		log.Infof("Cookie is already set: %s", checkCookie.Value)
-//		return checkCookie
-//	}
-//	uuid, err := exec.Command("uuidgen").Output()
-//	if err != nil {
-//		log.Criticalf("Error something went wrong with uuidgen: %s", err)
-//		os.Exit(1)
-//	}
-//	log.Infof("Setting cookie with UUID: %s", uuid)
-//	uuidLen := len(uuid) - 1
-//	uuidString := string(uuid[:uuidLen])
-//	cookie := &http.Cookie{Name: "uuid", Value: uuidString, Expires: time.Now().Add(356 * 24 * time.Hour), HttpOnly: true}
-//	http.SetCookie(w, cookie)
-//	return cookie
-//}
 
 // Checks the if the user is logged in and if there is a user
 // associated with the cookie
@@ -227,17 +207,17 @@ func main() {
 		fmt.Printf("Log instantiation error: %s", logError)
 	}
 	log.ReplaceLogger(logger)
+        log.Debug("Logger intitalized")
 	log.Infof("Port flag is set as: %d", *port)
 	log.Infof("Version flag is set? %v", *version)
-	log.Infof("Log file flag is set as: %s", *logFile)
+	log.Infof("Log config file flag is set as: %s", *logFile)
+	log.Infof("Templates folder flag is set as: %s", *templatesFlag)
 	log.Info("Server has started up!")
 	if *version {
 		log.Info("Printing out the version")
 		fmt.Println("Assignment Version: 2")
 		return
 	}
-	//cookieManager := CookieManagement.NewCookieManager()
-        //cookieManager.SetCookie()
 	http.HandleFunc("/time", timeHandler)
 	http.HandleFunc("/index.html", indexPage)
 	http.HandleFunc("/login", loginPage)
@@ -250,9 +230,5 @@ func main() {
 		log.Errorf("Server Failed: %s", err)
 		os.Exit(1)
 	}
-	//cookieManager := CookieManagement.NewCookieManager()
-	//cookieManager := NewCookieManager()
-	//cookieManager := new(CookieManager)
-	//fmt.Println(cookieManager)
 	log.Info("Server Closed")
 }
