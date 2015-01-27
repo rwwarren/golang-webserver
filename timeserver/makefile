@@ -1,6 +1,6 @@
 # Make file for timesrver assignment
-# This can get "help", "print", "fmt",
-# "install", "run"
+# This can get "help", "commits", "print",
+# "test", "fmt", "install", "run"
 # GOLOC is the location of the go executable
 # This also takes PORT for the port
 # Another thing is LOG and config filename
@@ -25,6 +25,9 @@ all: print install run
 help:
 	@cat readme.txt
 
+commits:
+	@echo "Total commits on branch: "
+	@echo $(shell git rev-list --count HEAD)
 print:
 	@echo "GOROOT: " $(GOROOT)
 	@echo "GOLOC: " $(GOLOC)

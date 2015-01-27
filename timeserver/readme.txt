@@ -14,10 +14,12 @@
   Options:
     help      Displays this, the help message
     all       Print, install, then run
+    commits   Prints the amount of commits on the branch
     print     Prints the GOROOT
+    fmt       Runs go fmt
+    test      Runs go test
     install   Runs "go build" to compile the go program
     run       Runs the compiled go build
-    test      Runs go test
 
   Variables:
     BREW      Set to anything if go is set up properaly in the $PATH
