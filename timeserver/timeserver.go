@@ -42,6 +42,7 @@ type PageInformation struct {
 }
 
 var templatesFolder string
+var templatesSlice []string
 
 // Intitalizes the concurrentMap
 func init() {
@@ -68,7 +69,10 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 		log.Debugf("User is logged in as: %s", name)
 	}
 	concurrentMap.RUnlock()
-	var timeTmpl = template.Must(template.New("time").ParseFiles("templates/template.html", "templates/menu.html", "templates/time.html"))
+	timeTemplatesSlice := make([]string, len(templatesSlice))
+	copy(timeTemplatesSlice, templatesSlice)
+	timeTemplatesSlice = append(timeTemplatesSlice, fmt.Sprintf("%s/time.html", templatesFolder))
+	var timeTmpl = template.Must(template.New("time").ParseFiles(timeTemplatesSlice...))
 	currentTime := time.Now().Local().Format(layout)
 	UTCTime := time.Now().UTC().Format(UTClayout)
 	data := &PageInformation{
@@ -89,7 +93,10 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 	printRequests(r)
 	log.Info("Error, url not found: These are not the URLs you are looking for.")
 	w.WriteHeader(404)
-	var errorPage = template.Must(template.New("ErrorPage").ParseFiles("templates/template.html", "templates/menu.html", "templates/404.html"))
+	errorTemplatesSlice := make([]string, len(templatesSlice))
+	copy(errorTemplatesSlice, templatesSlice)
+	errorTemplatesSlice = append(errorTemplatesSlice, fmt.Sprintf("%s/404.html", templatesFolder))
+	var errorPage = template.Must(template.New("ErrorPage").ParseFiles(errorTemplatesSlice...))
 	errorPage.ExecuteTemplate(w, "template", "")
 	return
 }
@@ -112,7 +119,10 @@ func indexPage(w http.ResponseWriter, r *http.Request) {
 
 // Renders the page for a loggedin user
 func renderIndex(w http.ResponseWriter, name string) {
-	var indexPage = template.Must(template.New("hoge").ParseFiles("templates/template.html", "templates/menu.html", "templates/index.html"))
+	indexTemplatesSlice := make([]string, len(templatesSlice))
+	copy(indexTemplatesSlice, templatesSlice)
+	indexTemplatesSlice = append(indexTemplatesSlice, fmt.Sprintf("%s/index.html", templatesFolder))
+	var indexPage = template.Must(template.New("IndexPage").ParseFiles(indexTemplatesSlice...))
 	person := &PageInformation{
 		Name: name,
 	}
@@ -122,13 +132,19 @@ func renderIndex(w http.ResponseWriter, name string) {
 // Renders the page if there is no name passed into
 // the login page
 func renderNoNamePage(w http.ResponseWriter) {
-	var logoutPage = template.Must(template.New("NoNamePage").ParseFiles("templates/template.html", "templates/menu.html", "templates/noNamePage.html"))
-	logoutPage.ExecuteTemplate(w, "template", "")
+	noNameTemplatesSlice := make([]string, len(templatesSlice))
+	copy(noNameTemplatesSlice, templatesSlice)
+	noNameTemplatesSlice = append(noNameTemplatesSlice, fmt.Sprintf("%s/noNamePage.html", templatesFolder))
+	var noNamePage = template.Must(template.New("NoNamePage").ParseFiles(noNameTemplatesSlice...))
+	noNamePage.ExecuteTemplate(w, "template", "")
 }
 
 // Renders the login page to the website
 func renderLogin(w http.ResponseWriter, r *http.Request) {
-	var loginPage = template.Must(template.New("Login").ParseFiles("templates/template.html", "templates/menu.html", "templates/loginPage.html"))
+	loginTemplatesSlice := make([]string, len(templatesSlice))
+	copy(loginTemplatesSlice, templatesSlice)
+	loginTemplatesSlice = append(loginTemplatesSlice, fmt.Sprintf("%s/loginPage.html", templatesFolder))
+	var loginPage = template.Must(template.New("LoginPage").ParseFiles(loginTemplatesSlice...))
 	loginPage.ExecuteTemplate(w, "template", "")
 }
 
@@ -182,7 +198,10 @@ func logoutPage(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("Deleting %s and %s from the server", cookie.Value, name)
 	deletingCookie := &http.Cookie{Name: "uuid", Value: "s", Expires: time.Unix(1, 0), HttpOnly: true}
 	http.SetCookie(w, deletingCookie)
-	var logoutPage = template.Must(template.New("logout").ParseFiles("templates/template.html", "templates/menu.html", "templates/logout.html"))
+	logoutTemplatesSlice := make([]string, len(templatesSlice))
+	copy(logoutTemplatesSlice, templatesSlice)
+	logoutTemplatesSlice = append(logoutTemplatesSlice, fmt.Sprintf("%s/logout.html", templatesFolder))
+	var logoutPage = template.Must(template.New("logout").ParseFiles(logoutTemplatesSlice...))
 	logoutPage.ExecuteTemplate(w, "template", "")
 }
 
@@ -192,15 +211,22 @@ func printRequests(r *http.Request) {
 	log.Infof("Request url path: %s", urlPath)
 }
 
+// Sets up the templates slice
+func templateSetup() {
+	templatesSlice = append(templatesSlice, fmt.Sprintf("%s/template.html", templatesFolder))
+	templatesSlice = append(templatesSlice, fmt.Sprintf("%s/menu.html", templatesFolder))
+}
+
 // Main handler that runs the server on the port or shows the version of the server
 func main() {
 	defer log.Flush()
 	port := flag.Int("port", 8080, "Set the server port, default port: 8080")
 	version := flag.Bool("V", false, "Shows the version of the timeserver")
 	logFile := flag.String("log", "logConfig", "This is the logger configuration file")
-	templatesFlag := flag.String("templates", "templates/", "This is the templates folder name")
+	templatesFlag := flag.String("templates", "templates", "This is the templates folder name")
 	flag.Parse()
 	templatesFolder = *templatesFlag
+	templateSetup()
 	logFileName := fmt.Sprintf("etc/%s.xml", *logFile)
 	logger, logError := log.LoggerFromConfigAsFile(logFileName)
 	if logError != nil {
