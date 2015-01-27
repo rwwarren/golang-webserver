@@ -22,7 +22,7 @@
     run       Runs the compiled go build
 
   Variables:
-    BREW      Set to anything if go is set up properaly in the $PATH
+    BREW      Set to anything if "go" is set up properaly in the $PATH
     GOLOC     If unset, then GOLOC will default to "/usr/apps/go/hg/bin/go"
               otherwise set it to the location where go is installed
               It is the location where go is installed on the computer
