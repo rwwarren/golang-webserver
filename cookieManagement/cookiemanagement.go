@@ -6,64 +6,64 @@ import (
 	"os"
 	"os/exec"
 	"time"
-	"sync"
+	//"sync"
 )
-
-// Stores the cookie information
-var concurrentMap struct {
-	sync.RWMutex
-	cookieMap map[string]Person
-}
-
-// Intitalizes the concurrentMap
-func init() {
-	concurrentMap = struct {
-		sync.RWMutex
-		cookieMap map[string]Person
-	}{cookieMap: make(map[string]Person)}
-	log.Debug("Initalizing the map")
-        //concurrentMap.cookieMap["asf"] = "tasting"
-}
-
-//type CookieManager struct {
-//	Name string
-//	Num  int
+//
+//// Stores the cookie information
+//var concurrentMap struct {
+//	sync.RWMutex
+//	cookieMap map[string]Person
 //}
-
-//type Manager interface {
-//  TestSetCookie(w http.ResponseWriter, r *http.Request)
+//
+//// Intitalizes the concurrentMap
+//func init() {
+//	concurrentMap = struct {
+//		sync.RWMutex
+//		cookieMap map[string]Person
+//	}{cookieMap: make(map[string]Person)}
+//	log.Debug("Initalizing the map")
+//        //concurrentMap.cookieMap["asf"] = "tasting"
 //}
-//func TestSetCookie(w http.ResponseWriter, r *http.Request){
-//  log.Info("COOKIE MANAGER TESST")
+//
+////type CookieManager struct {
+////	Name string
+////	Num  int
+////}
+//
+////type Manager interface {
+////  TestSetCookie(w http.ResponseWriter, r *http.Request)
+////}
+////func TestSetCookie(w http.ResponseWriter, r *http.Request){
+////  log.Info("COOKIE MANAGER TESST")
+////}
+//
+//type Person struct {
+//  Name string
 //}
-
-type Person struct {
-  Name string
-}
-
-func GetName(s string) Person {
-  return concurrentMap.cookieMap[s]
-}
-
-func SetName(uuid string, name string) {
-		concurrentMap.Lock()
-  concurrentMap.cookieMap[uuid] = Person{Name: name}
-}
-
-func DeletePerson(uuid string) Person {
-		//concurrentMap.Lock()
-		//person := concurrentMap.cookieMap[cookie.Value]
-		//delete(concurrentMap.cookieMap, cookie.Value)
-		//concurrentMap.Unlock()
-                //return person
-                return Person{Name: ""}
-}
-
-//func NewCookieManager() *CookieManager {
-//	log.Info("testing from cookie Manager")
-//	return &CookieManager{}
+//
+//func GetName(s string) Person {
+//  return concurrentMap.cookieMap[s]
 //}
-
+//
+//func SetName(uuid string, name string) {
+//		concurrentMap.Lock()
+//  concurrentMap.cookieMap[uuid] = Person{Name: name}
+//}
+//
+//func DeletePerson(uuid string) Person {
+//		//concurrentMap.Lock()
+//		//person := concurrentMap.cookieMap[cookie.Value]
+//		//delete(concurrentMap.cookieMap, cookie.Value)
+//		//concurrentMap.Unlock()
+//                //return person
+//                return Person{Name: ""}
+//}
+//
+////func NewCookieManager() *CookieManager {
+////	log.Info("testing from cookie Manager")
+////	return &CookieManager{}
+////}
+//
 //func setCookie(w http.ResponseWriter, r *http.Request) *http.Cookie {
 func SetCookie(w http.ResponseWriter, r *http.Request) *http.Cookie {
 	checkCookie, cookieError := r.Cookie("uuid")

@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"os/exec"
 	"sync"
 	"time"
 	"../cookieManagement/"
@@ -61,7 +60,7 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 	const layout = "3:04:05 PM"
 	const UTClayout = "15:04:05 MST"
 	personalString := ""
-	cookie := setCookie(w, r)
+	cookie := CookieManagement.SetCookie(w, r)
 	concurrentMap.RLock()
 	if len(concurrentMap.cookieMap[cookie.Value]) > 0 {
 		name := concurrentMap.cookieMap[cookie.Value]
@@ -133,30 +132,30 @@ func renderLogin(w http.ResponseWriter, r *http.Request) {
 	loginPage.ExecuteTemplate(w, "template", "")
 }
 
-// Returns the cookie for the server. Will set one if there is none
-func setCookie(w http.ResponseWriter, r *http.Request) *http.Cookie {
-	checkCookie, cookieError := r.Cookie("uuid")
-	if cookieError == nil {
-		log.Infof("Cookie is already set: %s", checkCookie.Value)
-		return checkCookie
-	}
-	uuid, err := exec.Command("uuidgen").Output()
-	if err != nil {
-		log.Criticalf("Error something went wrong with uuidgen: %s", err)
-		os.Exit(1)
-	}
-	log.Infof("Setting cookie with UUID: %s", uuid)
-	uuidLen := len(uuid) - 1
-	uuidString := string(uuid[:uuidLen])
-	cookie := &http.Cookie{Name: "uuid", Value: uuidString, Expires: time.Now().Add(356 * 24 * time.Hour), HttpOnly: true}
-	http.SetCookie(w, cookie)
-	return cookie
-}
+//// Returns the cookie for the server. Will set one if there is none
+//func setCookie(w http.ResponseWriter, r *http.Request) *http.Cookie {
+//	checkCookie, cookieError := r.Cookie("uuid")
+//	if cookieError == nil {
+//		log.Infof("Cookie is already set: %s", checkCookie.Value)
+//		return checkCookie
+//	}
+//	uuid, err := exec.Command("uuidgen").Output()
+//	if err != nil {
+//		log.Criticalf("Error something went wrong with uuidgen: %s", err)
+//		os.Exit(1)
+//	}
+//	log.Infof("Setting cookie with UUID: %s", uuid)
+//	uuidLen := len(uuid) - 1
+//	uuidString := string(uuid[:uuidLen])
+//	cookie := &http.Cookie{Name: "uuid", Value: uuidString, Expires: time.Now().Add(356 * 24 * time.Hour), HttpOnly: true}
+//	http.SetCookie(w, cookie)
+//	return cookie
+//}
 
 // Checks the if the user is logged in and if there is a user
 // associated with the cookie
 func checkLogin(w http.ResponseWriter, r *http.Request) (bool, string) {
-	cookie := setCookie(w, r)
+	cookie := CookieManagement.SetCookie(w, r)
 	concurrentMap.RLock()
 	name := concurrentMap.cookieMap[cookie.Value]
 	concurrentMap.RUnlock()
@@ -178,7 +177,7 @@ func loginPage(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	formName := r.FormValue("name")
 	if len(formName) > 0 {
-		cookie := setCookie(w, r)
+		cookie := CookieManagement.SetCookie(w, r)
 		concurrentMap.Lock()
 		concurrentMap.cookieMap[cookie.Value] = formName
 		concurrentMap.Unlock()
@@ -195,26 +194,16 @@ func loginPage(w http.ResponseWriter, r *http.Request) {
 // Here is the logout page that will remove the cookies assosiated with the user
 func logoutPage(w http.ResponseWriter, r *http.Request) {
 	printRequests(r)
-	//TODO add cookie management part
-	if cookie, err := r.Cookie("uuid"); err == nil {
-		concurrentMap.Lock()
-		name := concurrentMap.cookieMap[cookie.Value]
-		delete(concurrentMap.cookieMap, cookie.Value)
-		concurrentMap.Unlock()
-		log.Debugf("Deleting %s and %s from the server", cookie.Value, name)
-	}
-	cookie := &http.Cookie{Name: "uuid", Value: "s", Expires: time.Unix(1, 0), HttpOnly: true}
-	http.SetCookie(w, cookie)
+        cookie := CookieManagement.SetCookie(w,r)
+	concurrentMap.Lock()
+	name := concurrentMap.cookieMap[cookie.Value]
+	delete(concurrentMap.cookieMap, cookie.Value)
+	concurrentMap.Unlock()
+	log.Debugf("Deleting %s and %s from the server", cookie.Value, name)
+	deletingCookie := &http.Cookie{Name: "uuid", Value: "s", Expires: time.Unix(1, 0), HttpOnly: true}
+	http.SetCookie(w, deletingCookie)
 	var logoutPage = template.Must(template.New("logout").ParseFiles("templates/template.html", "templates/menu.html", "templates/logout.html"))
 	logoutPage.ExecuteTemplate(w, "template", "")
-	//cookieManager := CookieManagement.NewCookieManager()
-	//CookieManagement.SetCookie(w, r)
-        //fmt.Println(cookieManager)
-        CookieManagement.SetName("asdf", "Ryan")
-        fmt.Println(CookieManagement.GetName("asdf"))
-        //fmt.Println(CookieManagement.GetMap())
-	//cookieManager := CookieManagement.SetCookie(w, r)
-        //cookieManager.SetCookie(w, r)
 }
 
 // Function for printing the request URL path
