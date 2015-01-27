@@ -10,6 +10,7 @@
               make run V=1
               make run BREW=1
               make run LOG=asdf
+              make run TEMPLATE=asdf
 
   Options:
     help      Displays this, the help message
@@ -30,6 +31,7 @@
               otherwise set it to the location where go is installed
     PORT      Set the port for the server to run on
     LOG       Set the log file config name
+    TEMPLATE  Set the template directory location
     V         Will display the server version and quit
 
 
