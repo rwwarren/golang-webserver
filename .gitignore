@@ -5,4 +5,5 @@
 timeserver/timeserver
 test/*
 *.tar.gz
+*.tar
 
