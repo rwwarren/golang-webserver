@@ -26,6 +26,19 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 
 func main() {
         ifaces, ipError := net.Interfaces()
+        //fmt.Println(net.Interfaces().InterfaceByName("eth0"))
+        //fmt.Println(ifaces.InterfaceByName("eth0"))
+        ief, err0 := net.InterfaceByName("eth0")
+        if err0 !=nil{
+                //log.Fatal(err)
+        }
+        addrs, err1 := ief.Addrs()
+        if err1 !=nil{
+                //log.Fatal(err)
+        }
+        fmt.Println("HERE:")
+        fmt.Println(addrs)
+
         if ipError != nil {
           fmt.Println(ipError)
         }
@@ -34,9 +47,10 @@ func main() {
             if err != nil {
               fmt.Println(err)
             }
+            //fmt.Println(addrs.get("eth0"))
             for _, addr := range addrs {
                 //fmt.Println(_)
-                fmt.Println(addr)
+                //fmt.Println(addr)
                 switch v := addr.(type) {
                     case *net.IPAddr:
                     // process IP address
