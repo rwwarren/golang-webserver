@@ -41,9 +41,15 @@ func main() {
         //fmt.Println("HERE:")
         //fmt.Println(addrs)
         //fmt.Println(addrs[0])
-        theIP := fmt.Sprintf("%s", addrs[0])
-        ipAddr := fmt.Sprintf("%s", strings.Split(theIP, "/")[0])
+        ipAddr := ""
+        if addrs != nil {
+            theIP := fmt.Sprintf("%s", addrs[0])
+            ipAddr = fmt.Sprintf("%s", strings.Split(theIP, "/")[0])
+        } else {
+            ipAddr = "localhost"
+        }
         fmt.Println(ipAddr)
+
         //fmt.Println(strings.Split(theIP, "/"))
         //fmt.Println(strings.Split(addrs[0].ToString(), "/"))
         //if ipError != nil {
