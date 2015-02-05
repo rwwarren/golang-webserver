@@ -2,7 +2,8 @@
 *.swp
 *.docx
 *.log
-timeserver/timeserver
+command/timeserver/timeserver
+command/authserver/authserver
 test/*
 *.tar.gz
 *.tar
