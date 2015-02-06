@@ -12,18 +12,97 @@ import (
     "net"
     "fmt"
     "strings"
+	"html/template"
 )
 
+var templatesFolder string
+var templatesSlice []string
+
 func init() {
+        templatesFolder = "templates"
+	templatesSlice = append(templatesSlice, fmt.Sprintf("%s/template.html", templatesFolder))
+}
+
+type Information struct {
+    Name string
+    Cookie string
+}
+
+func malformedRequest(w http.ResponseWriter, r *http.Request, missingInfo *Information) {
+      w.WriteHeader(400)
+	malformedPageTemplatesSlice := make([]string, len(templatesSlice))
+	copy(malformedPageTemplatesSlice, templatesSlice)
+	malformedPageTemplatesSlice = append(malformedPageTemplatesSlice, fmt.Sprintf("%s/malformed.html", templatesFolder))
+	var malformedPage = template.Must(template.New("MalformedPage").ParseFiles(malformedPageTemplatesSlice...))
+	malformedPage.ExecuteTemplate(w, "template", missingInfo)
+      return
 }
 
 func getPath(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	formCookie := r.FormValue("cookie")
+        if len(formCookie) == 0{
+          missingCookie := ""
+          missingName := "Name is missing"
+          info := &Information{
+            Name: missingName,
+            Cookie: missingCookie,
+          }
+          malformedRequest(w, r, info)
+          return
+        }
+	//printRequests(r)
+	//log.Info("Error, url not found: These are not the URLs you are looking for.")
+	//w.WriteHeader(404)
+	getPageTemplatesSlice := make([]string, len(templatesSlice))
+	copy(getPageTemplatesSlice, templatesSlice)
+	getPageTemplatesSlice = append(getPageTemplatesSlice, fmt.Sprintf("%s/get.html", templatesFolder))
+	var getPage = template.Must(template.New("GetPage").ParseFiles(getPageTemplatesSlice...))
+	getPage.ExecuteTemplate(w, "template", "")
+	return
 }
 
 func setPath(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	formCookie := r.FormValue("cookie")
+	formName := r.FormValue("name")
+        if len(formCookie) == 0 || len(formName) == 0 {
+          missingCookie := ""
+          missingName := ""
+          if len(formCookie) == 0 {
+            missingCookie = "Cookie is missing"
+          }
+          if len(formName) == 0 {
+            missingName = "Name is missing"
+          }
+          info := &Information{
+            Name: missingName,
+            Cookie: missingCookie,
+          }
+          malformedRequest(w, r, info)
+          return
+        }
+	//printRequests(r)
+	//log.Info("Error, url not found: These are not the URLs you are looking for.")
+	//w.WriteHeader(404)
+	setPageTemplatesSlice := make([]string, len(templatesSlice))
+	copy(setPageTemplatesSlice, templatesSlice)
+	setPageTemplatesSlice = append(setPageTemplatesSlice, fmt.Sprintf("%s/set.html", templatesFolder))
+	var setPage = template.Must(template.New("SetPage").ParseFiles(setPageTemplatesSlice...))
+	setPage.ExecuteTemplate(w, "template", "")
+	return
 }
 
 func errorer(w http.ResponseWriter, r *http.Request) {
+	//printRequests(r)
+	//log.Info("Error, url not found: These are not the URLs you are looking for.")
+	w.WriteHeader(404)
+	errorTemplatesSlice := make([]string, len(templatesSlice))
+	copy(errorTemplatesSlice, templatesSlice)
+	errorTemplatesSlice = append(errorTemplatesSlice, fmt.Sprintf("%s/404.html", templatesFolder))
+	var errorPage = template.Must(template.New("ErrorPage").ParseFiles(errorTemplatesSlice...))
+	errorPage.ExecuteTemplate(w, "template", "")
+	return
 }
 
 func main() {
