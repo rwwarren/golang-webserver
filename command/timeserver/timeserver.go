@@ -18,8 +18,9 @@
 package main
 
 import (
-	"../cookieManagement/"
-	log "../seelog-master/"
+	"../../cookieManagement/"
+	log "../../seelog-master/"
+	//log "../seelog-master/"
 	"flag"
 	"fmt"
 	"html/template"
