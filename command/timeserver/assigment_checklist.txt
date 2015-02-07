@@ -1,8 +1,14 @@
-- new look and feel (see below)
-- template √
-- header and footer √
-- cookie management √
-- Log messages √
-- UTC time √
-- Update readme √
-- Update makefile √
+- "command" directory, "timeserver" and "authserver" √
+- authport and authhost flags
+- flag parse in init function
+- authserver: get and set
+- timeserver authtimeout flag
+- timeserver rand package (Gaussian)
+- timeserver random delay flag
+- timeserver random deviation flag
+- timserver max inflight  -- track and break after MAX. COUNT WILL BE CONCURRENT
+- authserver dumpfile flag. add .bak
+- authserver checkpoint interval flag. the concurrent dictionary will be copied to a non-concurrent dictionary
+- potential packages:  json, os, filepath, strings
+√
+

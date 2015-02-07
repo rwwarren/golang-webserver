@@ -16,14 +16,25 @@ import (
 	"os/exec"
 	"time"
 	log "../../seelog-master/"
+	"sync"
 )
 
 var templatesFolder string
 var templatesSlice []string
 
+// Stores the cookie information
+var concurrentMap struct {
+	sync.RWMutex
+	cookieMap map[string]string
+}
+
 func init() {
         templatesFolder = "templates"
 	templatesSlice = append(templatesSlice, fmt.Sprintf("%s/template.html", templatesFolder))
+	concurrentMap = struct {
+		sync.RWMutex
+		cookieMap map[string]string
+	}{cookieMap: make(map[string]string)}
 }
 
 type Information struct {
@@ -82,6 +93,10 @@ func getPath(w http.ResponseWriter, r *http.Request) {
 	getPageTemplatesSlice = append(getPageTemplatesSlice, fmt.Sprintf("%s/get.html", templatesFolder))
 	var getPage = template.Must(template.New("GetPage").ParseFiles(getPageTemplatesSlice...))
 	getPage.ExecuteTemplate(w, "template", "")
+        //
+	concurrentMap.RLock()
+	concurrentMap.RUnlock()
+        //
 	return
 }
 
@@ -113,6 +128,9 @@ func setPath(w http.ResponseWriter, r *http.Request) {
 	setPageTemplatesSlice = append(setPageTemplatesSlice, fmt.Sprintf("%s/set.html", templatesFolder))
 	var setPage = template.Must(template.New("SetPage").ParseFiles(setPageTemplatesSlice...))
 	setPage.ExecuteTemplate(w, "template", "")
+		concurrentMap.Lock()
+		concurrentMap.cookieMap[formCookie] = formName
+		concurrentMap.Unlock()
 	return
 }
 
@@ -130,6 +148,9 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	defer log.Flush()
+	//dumpfile := flag.String("dumpfile", "backup", "This is the authserver dump file")
+	//backupInterval := flag.Int("checkpoint-interval", 10, "This is the authserver backup interval")
+	//flag.Parse()
         ief, err0 := net.InterfaceByName("eth0")
         if err0 !=nil{
                 //log.Fatal(err)

@@ -28,6 +28,7 @@ import (
 	"os"
 	"sync"
 	"time"
+        //"rand"
 )
 
 // Stores the cookie information
@@ -225,6 +226,12 @@ func main() {
 	version := flag.Bool("V", false, "Shows the version of the timeserver")
 	logFile := flag.String("log", "logConfig", "This is the logger configuration file")
 	templatesFlag := flag.String("templates", "templates", "This is the templates folder name")
+	//authPort := flag.Int("authport", 9090, "This is the authserver default port")
+	//authHost := flag.String("authhost", "localhost", "This is the authserver default host")
+	//authTimeout := flag.Int("authtimeout-ms", 1000, "This is the authserver timeout")
+	//avgResponse := flag.Int("avg-response-ms", 1000, "This is the timeserver avg response time")
+	//deviation := flag.Int("deviation-ms", 1, "This is the timeserver deviation")
+	//maxInflight := flag.Int("max-inflight", 0, "This is the timeserver max inflight connections (0 is unlimited)")
 	flag.Parse()
 	templatesFolder = *templatesFlag
 	templateSetup()
