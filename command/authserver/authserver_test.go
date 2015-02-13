@@ -1,11 +1,12 @@
 package main
 
 import (
-        "os"
-        "testing"
+	"os"
+	"testing"
 )
 
 func TestMain(t *testing.M) {
-        os.Exit(t.Run())
+	//errorer(new http.ResponseWriter(), new http.Request())
+	os.Exit(t.Run())
 
 }

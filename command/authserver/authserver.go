@@ -1,22 +1,28 @@
 // (C) Ryan Warren 2015
 // Authserver
 //
-// 
+//
 
 package main
 
 import (
-    "net/http"
-    "os"
-    //"os/exec"
-    "net"
-    "fmt"
-    "strings"
-	"html/template"
-	"os/exec"
-	"time"
+	"net/http"
+	"os"
+	//"os/exec"
 	log "../../seelog-master/"
+	"fmt"
+	"html/template"
+	"net"
+	"os/exec"
+	"strings"
 	"sync"
+	"time"
+        "flag"
+        "io/ioutil"
+        //"ioutil"
+	//"json"
+        "encoding/json"
+	//"filepath"
 )
 
 var templatesFolder string
@@ -29,7 +35,7 @@ var concurrentMap struct {
 }
 
 func init() {
-        templatesFolder = "templates"
+	templatesFolder = "templates"
 	templatesSlice = append(templatesSlice, fmt.Sprintf("%s/template.html", templatesFolder))
 	concurrentMap = struct {
 		sync.RWMutex
@@ -38,8 +44,25 @@ func init() {
 }
 
 type Information struct {
-    Name string
-    Cookie string
+	Name   string
+	Cookie string
+}
+
+func buildMap(loadfile string) {
+  file, fileErr := ioutil.ReadFile(loadfile)
+  if fileErr != nil {
+    fmt.Println("error:", fileErr)
+  }
+	concurrentMap.Lock()
+        //move this above
+        //b, err := json.Marshal(concurrentMap.cookieMap)
+         err := json.Unmarshal(file, &concurrentMap.cookieMap)
+	concurrentMap.Unlock()
+  if err != nil {
+    fmt.Println("error:", err)
+  }
+  //if the read-back is successful, the backup file should be deleted.
+  //fmt.Printf("%+v", animals)
 }
 
 // Set and returns the cookie from the request
@@ -63,40 +86,57 @@ func SetCookie(w http.ResponseWriter, r *http.Request) *http.Cookie {
 }
 
 func malformedRequest(w http.ResponseWriter, r *http.Request, missingInfo *Information) {
-      w.WriteHeader(400)
+	w.WriteHeader(400)
 	malformedPageTemplatesSlice := make([]string, len(templatesSlice))
 	copy(malformedPageTemplatesSlice, templatesSlice)
 	malformedPageTemplatesSlice = append(malformedPageTemplatesSlice, fmt.Sprintf("%s/malformed.html", templatesFolder))
 	var malformedPage = template.Must(template.New("MalformedPage").ParseFiles(malformedPageTemplatesSlice...))
 	malformedPage.ExecuteTemplate(w, "template", missingInfo)
-      return
+	return
 }
 
 func getPath(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	formCookie := r.FormValue("cookie")
-        if len(formCookie) == 0{
-          missingCookie := ""
-          missingName := "Name is missing"
-          info := &Information{
-            Name: missingName,
-            Cookie: missingCookie,
-          }
-          malformedRequest(w, r, info)
-          return
-        }
-	//printRequests(r)
-	//log.Info("Error, url not found: These are not the URLs you are looking for.")
-	//w.WriteHeader(404)
+	if len(formCookie) == 0 {
+		missingCookie := ""
+		missingName := "Name is missing"
+		info := &Information{
+			Name:   missingName,
+			Cookie: missingCookie,
+		}
+		malformedRequest(w, r, info)
+		return
+	}
+	concurrentMap.RLock()
+        name := concurrentMap.cookieMap[formCookie]
+	concurrentMap.RUnlock()
+	//
 	getPageTemplatesSlice := make([]string, len(templatesSlice))
 	copy(getPageTemplatesSlice, templatesSlice)
 	getPageTemplatesSlice = append(getPageTemplatesSlice, fmt.Sprintf("%s/get.html", templatesFolder))
 	var getPage = template.Must(template.New("GetPage").ParseFiles(getPageTemplatesSlice...))
-	getPage.ExecuteTemplate(w, "template", "")
-        //
+	getPage.ExecuteTemplate(w, "template", name)
+        //TODO fix this
 	concurrentMap.RLock()
+        backup := make(map[string]string)
+        //backup := make(map[string]string, len(concurrentMap.cookieMap))
+        //copy(backup, concurrentMap.cookieMap)
+        for k, v := range concurrentMap.cookieMap {
+              backup[k] = v
+        }
+        //move this above
 	concurrentMap.RUnlock()
-        //
+        b, err := json.Marshal(backup)
+        if err != nil {
+            fmt.Println("error:", err)
+        }
+        //fmt.Println(b)
+        //os.Stdout.Write(b)
+        writeError := ioutil.WriteFile("backup/backup.bak", b, 0644)
+        if writeError != nil {
+          os.Exit(0)
+        }
 	return
 }
 
@@ -104,22 +144,22 @@ func setPath(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	formCookie := r.FormValue("cookie")
 	formName := r.FormValue("name")
-        if len(formCookie) == 0 || len(formName) == 0 {
-          missingCookie := ""
-          missingName := ""
-          if len(formCookie) == 0 {
-            missingCookie = "Cookie is missing"
-          }
-          if len(formName) == 0 {
-            missingName = "Name is missing"
-          }
-          info := &Information{
-            Name: missingName,
-            Cookie: missingCookie,
-          }
-          malformedRequest(w, r, info)
-          return
-        }
+	if len(formCookie) == 0 || len(formName) == 0 {
+		missingCookie := ""
+		missingName := ""
+		if len(formCookie) == 0 {
+			missingCookie = "Cookie is missing"
+		}
+		if len(formName) == 0 {
+			missingName = "Name is missing"
+		}
+		info := &Information{
+			Name:   missingName,
+			Cookie: missingCookie,
+		}
+		malformedRequest(w, r, info)
+		return
+	}
 	//printRequests(r)
 	//log.Info("Error, url not found: These are not the URLs you are looking for.")
 	//w.WriteHeader(404)
@@ -128,9 +168,9 @@ func setPath(w http.ResponseWriter, r *http.Request) {
 	setPageTemplatesSlice = append(setPageTemplatesSlice, fmt.Sprintf("%s/set.html", templatesFolder))
 	var setPage = template.Must(template.New("SetPage").ParseFiles(setPageTemplatesSlice...))
 	setPage.ExecuteTemplate(w, "template", "")
-		concurrentMap.Lock()
-		concurrentMap.cookieMap[formCookie] = formName
-		concurrentMap.Unlock()
+	concurrentMap.Lock()
+	concurrentMap.cookieMap[formCookie] = formName
+	concurrentMap.Unlock()
 	return
 }
 
@@ -146,30 +186,38 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+//called go routine
+//https://gobyexample.com/goroutines
+go backupServer(){
+}
+
 func main() {
 	defer log.Flush()
-	//dumpfile := flag.String("dumpfile", "backup", "This is the authserver dump file")
+	dumpfile := flag.String("dumpfile", "backup", "This is the authserver dump file")
 	//backupInterval := flag.Int("checkpoint-interval", 10, "This is the authserver backup interval")
-	//flag.Parse()
-        ief, err0 := net.InterfaceByName("eth0")
-        if err0 !=nil{
-                //log.Fatal(err)
-        }
-        addrs, err1 := ief.Addrs()
-        if err1 !=nil{
-                //log.Fatal(err)
-        }
-        //fmt.Println("HERE:")
-        //fmt.Println(addrs)
-        //fmt.Println(addrs[0])
-        ipAddr := ""
-        if addrs != nil {
-            theIP := fmt.Sprintf("%s", addrs[0])
-            ipAddr = fmt.Sprintf("%s", strings.Split(theIP, "/")[0])
-        } else {
-            ipAddr = "localhost"
-        }
-        fmt.Println(ipAddr)
+	flag.Parse()
+	ief, err0 := net.InterfaceByName("eth0")
+	if err0 != nil {
+		//log.Fatal(err)
+	}
+	addrs, err1 := ief.Addrs()
+	if err1 != nil {
+		//log.Fatal(err)
+	}
+	//fmt.Println("HERE:")
+	//fmt.Println(addrs)
+	//fmt.Println(addrs[0])
+	ipAddr := ""
+	if addrs != nil {
+		theIP := fmt.Sprintf("%s", addrs[0])
+		ipAddr = fmt.Sprintf("%s", strings.Split(theIP, "/")[0])
+	} else {
+		ipAddr = "localhost"
+	}
+	fmt.Println(ipAddr)
+	fmt.Println(*dumpfile)
+        loadingFile := fmt.Sprintf("backup/%s.bak", *dumpfile)
+        buildMap(loadingFile)
 	http.HandleFunc("/get", getPath)
 	http.HandleFunc("/set", setPath)
 	http.HandleFunc("/", errorer)
@@ -180,5 +228,3 @@ func main() {
 		os.Exit(1)
 	}
 }
-
-
