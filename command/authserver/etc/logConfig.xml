@@ -1,0 +1,24 @@
+<seelog>
+  <outputs>
+    <filter levels="info">
+      <console formatid="normal"/>
+    </filter>
+    <file formatid="file" path="access.log"/>
+    <filter levels="trace, debug">
+      <console formatid="debug"/>
+    </filter>
+    <filter levels="warn">
+      <console formatid="warn"/>
+    </filter>
+    <filter levels="error, critical">
+      <console formatid="error"/>
+    </filter>
+  </outputs>
+  <formats>
+    <format id="debug" format="[%EscM(33)%LEVEL%EscM(39)] %Date %Time: %Msg%n"/>
+    <format id="normal" format="[%EscM(32)%LEVEL%EscM(39)] %Date %Time: %Msg%n"/>
+    <format id="warn" format="[%EscM(36)%LEVEL%EscM(39)] %Date %Time: %Msg%n"/>
+    <format id="error" format="[%EscM(31)%LEVEL%EscM(39)] %Date %Time: %Msg%n"/>
+    <format id="file" format="[%LEVEL] %Date %Time: %Msg%n"/>
+  </formats>
+</seelog>

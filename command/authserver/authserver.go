@@ -10,23 +10,24 @@ import (
 	"os"
 	//"os/exec"
 	log "../../seelog-master/"
+	"flag"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"net"
 	"os/exec"
 	"strings"
 	"sync"
 	"time"
-        "flag"
-        "io/ioutil"
-        //"ioutil"
+	//"ioutil"
 	//"json"
-        "encoding/json"
+	"encoding/json"
 	//"filepath"
 )
 
 var templatesFolder string
 var templatesSlice []string
+var done bool
 
 // Stores the cookie information
 var concurrentMap struct {
@@ -49,20 +50,22 @@ type Information struct {
 }
 
 func buildMap(loadfile string) {
-  file, fileErr := ioutil.ReadFile(loadfile)
-  if fileErr != nil {
-    fmt.Println("error:", fileErr)
-  }
+	file, fileErr := ioutil.ReadFile(loadfile)
+	if fileErr != nil {
+		log.Errorf("file error: %s", fileErr)
+		os.Exit(1)
+	}
 	concurrentMap.Lock()
-        //move this above
-        //b, err := json.Marshal(concurrentMap.cookieMap)
-         err := json.Unmarshal(file, &concurrentMap.cookieMap)
+	//move this above
+	//b, err := json.Marshal(concurrentMap.cookieMap)
+	err := json.Unmarshal(file, &concurrentMap.cookieMap)
 	concurrentMap.Unlock()
-  if err != nil {
-    fmt.Println("error:", err)
-  }
-  //if the read-back is successful, the backup file should be deleted.
-  //fmt.Printf("%+v", animals)
+	if err != nil {
+		log.Errorf("build error: %s", err)
+		os.Exit(1)
+	}
+	//if the read-back is successful, the backup file should be deleted.
+	//fmt.Printf("%+v", animals)
 }
 
 // Set and returns the cookie from the request
@@ -109,7 +112,7 @@ func getPath(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	concurrentMap.RLock()
-        name := concurrentMap.cookieMap[formCookie]
+	name := concurrentMap.cookieMap[formCookie]
 	concurrentMap.RUnlock()
 	//
 	getPageTemplatesSlice := make([]string, len(templatesSlice))
@@ -117,26 +120,6 @@ func getPath(w http.ResponseWriter, r *http.Request) {
 	getPageTemplatesSlice = append(getPageTemplatesSlice, fmt.Sprintf("%s/get.html", templatesFolder))
 	var getPage = template.Must(template.New("GetPage").ParseFiles(getPageTemplatesSlice...))
 	getPage.ExecuteTemplate(w, "template", name)
-        //TODO fix this
-	concurrentMap.RLock()
-        backup := make(map[string]string)
-        //backup := make(map[string]string, len(concurrentMap.cookieMap))
-        //copy(backup, concurrentMap.cookieMap)
-        for k, v := range concurrentMap.cookieMap {
-              backup[k] = v
-        }
-        //move this above
-	concurrentMap.RUnlock()
-        b, err := json.Marshal(backup)
-        if err != nil {
-            fmt.Println("error:", err)
-        }
-        //fmt.Println(b)
-        //os.Stdout.Write(b)
-        writeError := ioutil.WriteFile("backup/backup.bak", b, 0644)
-        if writeError != nil {
-          os.Exit(0)
-        }
 	return
 }
 
@@ -188,25 +171,71 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 
 //called go routine
 //https://gobyexample.com/goroutines
-go backupServer(){
+func backupServer(backupInterval int, loadingFile string) {
+	//func backupServer(done chan bool){
+	for !done {
+		time.Sleep(time.Duration(backupInterval) * time.Second)
+		writeBackup(loadingFile)
+		buildMap(loadingFile)
+		deleteBackup(loadingFile)
+	}
+}
+
+func writeBackup(loadingFile string) {
+	//TODO fix this
+	concurrentMap.RLock()
+	backup := make(map[string]string)
+	//backup := make(map[string]string, len(concurrentMap.cookieMap))
+	//copy(backup, concurrentMap.cookieMap)
+	for k, v := range concurrentMap.cookieMap {
+		backup[k] = v
+	}
+	//move this above
+	concurrentMap.RUnlock()
+	b, err := json.Marshal(backup)
+	if err != nil {
+		log.Errorf("error: %s", err)
+		os.Exit(1)
+	}
+	//fmt.Println(b)
+	//os.Stdout.Write(b)
+	writeError := ioutil.WriteFile(loadingFile, b, 0644)
+	if writeError != nil {
+		os.Exit(1)
+	}
+}
+
+func deleteBackup(loadingFile string) {
 }
 
 func main() {
 	defer log.Flush()
+	port := flag.Int("port", 9090, "Set the server port, default port: 9090")
 	dumpfile := flag.String("dumpfile", "backup", "This is the authserver dump file")
-	//backupInterval := flag.Int("checkpoint-interval", 10, "This is the authserver backup interval")
+	backupInterval := flag.Int("checkpoint-interval", 10, "This is the authserver backup interval")
+	logFile := flag.String("log", "logConfig", "This is the logger configuration file")
 	flag.Parse()
+	logFileName := fmt.Sprintf("etc/%s.xml", *logFile)
+	logger, logError := log.LoggerFromConfigAsFile(logFileName)
+	if logError != nil {
+		fmt.Printf("Log instantiation error: %s", logError)
+	}
+	log.ReplaceLogger(logger)
+	log.Debug("Logger intitalized")
+	log.Trace("Testing trace")
+	log.Debug("Testing debug")
+	log.Info("Testing info")
+	log.Warn("Testing warn")
+	log.Error("Testing error")
+	log.Critical("Testing critical")
 	ief, err0 := net.InterfaceByName("eth0")
 	if err0 != nil {
-		//log.Fatal(err)
+		log.Critical(err0)
 	}
 	addrs, err1 := ief.Addrs()
 	if err1 != nil {
-		//log.Fatal(err)
+		log.Critical(err1)
 	}
-	//fmt.Println("HERE:")
-	//fmt.Println(addrs)
-	//fmt.Println(addrs[0])
 	ipAddr := ""
 	if addrs != nil {
 		theIP := fmt.Sprintf("%s", addrs[0])
@@ -214,17 +243,20 @@ func main() {
 	} else {
 		ipAddr = "localhost"
 	}
-	fmt.Println(ipAddr)
-	fmt.Println(*dumpfile)
-        loadingFile := fmt.Sprintf("backup/%s.bak", *dumpfile)
-        buildMap(loadingFile)
+	var portString = fmt.Sprintf(":%d", *port)
+	log.Infof("IpAddress and port: %s%s", ipAddr, portString)
+	loadingFile := fmt.Sprintf("backup/%s.bak", *dumpfile)
+	buildMap(loadingFile)
+	done = false
+	go backupServer(*backupInterval, loadingFile)
+	//go backupServer(done)
 	http.HandleFunc("/get", getPath)
 	http.HandleFunc("/set", setPath)
 	http.HandleFunc("/", errorer)
-	err := http.ListenAndServe(":9090", nil)
-	//err := http.ListenAndServe(portString, nil)
+	err := http.ListenAndServe(portString, nil)
 	if err != nil {
-		//log.Errorf("Server Failed: %s", err)
+		log.Errorf("Server Failed: %s", err)
 		os.Exit(1)
 	}
+	done = true
 }
