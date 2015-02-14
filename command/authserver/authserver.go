@@ -28,6 +28,7 @@ import (
 var templatesFolder string
 var templatesSlice []string
 var done bool
+var loadingFile string
 
 // Stores the cookie information
 var concurrentMap struct {
@@ -49,11 +50,13 @@ type Information struct {
 	Cookie string
 }
 
-func buildMap(loadfile string) {
-	file, fileErr := ioutil.ReadFile(loadfile)
+func buildMap() {
+//func buildMap(loadfile string) {
+	file, fileErr := ioutil.ReadFile(loadingFile)
 	if fileErr != nil {
 		log.Errorf("file error: %s", fileErr)
-		os.Exit(1)
+		//os.Exit(1)
+                return
 	}
 	concurrentMap.Lock()
 	//move this above
@@ -171,17 +174,19 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 
 //called go routine
 //https://gobyexample.com/goroutines
-func backupServer(backupInterval int, loadingFile string) {
+func backupServer(backupInterval int) {
+//func backupServer(backupInterval int, loadingFile string) {
 	//func backupServer(done chan bool){
 	for !done {
 		time.Sleep(time.Duration(backupInterval) * time.Second)
-		writeBackup(loadingFile)
-		buildMap(loadingFile)
-		deleteBackup(loadingFile)
+		writeBackup()
+		buildMap()
+		//deleteBackup()
 	}
 }
 
-func writeBackup(loadingFile string) {
+func writeBackup() {
+//func writeBackup(loadingFile string) {
 	//TODO fix this
 	concurrentMap.RLock()
 	backup := make(map[string]string)
@@ -197,22 +202,33 @@ func writeBackup(loadingFile string) {
 		log.Errorf("error: %s", err)
 		os.Exit(1)
 	}
-	//fmt.Println(b)
-	//os.Stdout.Write(b)
+      //TODO fix this!
+	//if _, fileErr := os.Stat(loadingFile); fileErr == nil {
+        //      log.Info("got here")
+	//      loadingFile = fmt.Sprintf("%s.bak", loadingFile)
+        //      log.Info("got here too")
+        //      deleteBackup()
+	//} else {
+        //  log.Info(fileErr)
+        //}
 	writeError := ioutil.WriteFile(loadingFile, b, 0644)
 	if writeError != nil {
+		log.Errorf("error: %s", writeError)
 		os.Exit(1)
 	}
 }
 
-func deleteBackup(loadingFile string) {
+func deleteBackup() {
+//func deleteBackup(loadingFile string) {
+	os.Remove(loadingFile)
+        log.Info("here")
 }
 
 func main() {
 	defer log.Flush()
 	port := flag.Int("port", 9090, "Set the server port, default port: 9090")
 	dumpfile := flag.String("dumpfile", "backup", "This is the authserver dump file")
-	backupInterval := flag.Int("checkpoint-interval", 10, "This is the authserver backup interval")
+	backupInterval := flag.Int("checkpoint-interval", 1, "This is the authserver backup interval")
 	logFile := flag.String("log", "logConfig", "This is the logger configuration file")
 	flag.Parse()
 	logFileName := fmt.Sprintf("etc/%s.xml", *logFile)
@@ -245,10 +261,11 @@ func main() {
 	}
 	var portString = fmt.Sprintf(":%d", *port)
 	log.Infof("IpAddress and port: %s%s", ipAddr, portString)
-	loadingFile := fmt.Sprintf("backup/%s.bak", *dumpfile)
-	buildMap(loadingFile)
+	loadingFile = fmt.Sprintf("backup/%s", *dumpfile)
+	buildMap()
 	done = false
-	go backupServer(*backupInterval, loadingFile)
+	go backupServer(*backupInterval)
+	//go backupServer(*backupInterval, loadingFile)
 	//go backupServer(done)
 	http.HandleFunc("/get", getPath)
 	http.HandleFunc("/set", setPath)

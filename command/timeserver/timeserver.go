@@ -26,16 +26,20 @@ import (
 	"html/template"
 	"net/http"
 	"os"
-	"sync"
+	//"sync"
 	"time"
         //"rand"
+        //"net"
+        //"io/ioutil"
+        "io/ioutil"
+        "strings"
 )
 
-// Stores the cookie information
-var concurrentMap struct {
-	sync.RWMutex
-	cookieMap map[string]string
-}
+//// Stores the cookie information
+//var concurrentMap struct {
+//	sync.RWMutex
+//	cookieMap map[string]string
+//}
 
 type PageInformation struct {
 	Name        string
@@ -45,15 +49,47 @@ type PageInformation struct {
 
 var templatesFolder string
 var templatesSlice []string
+var server string
 
 // Intitalizes the concurrentMap
 func init() {
 	log.Debug("Logger not initialized yet")
-	concurrentMap = struct {
-		sync.RWMutex
-		cookieMap map[string]string
-	}{cookieMap: make(map[string]string)}
-	log.Debug("Initalizing the map")
+	//concurrentMap = struct {
+	//	sync.RWMutex
+	//	cookieMap map[string]string
+	//}{cookieMap: make(map[string]string)}
+	//log.Debug("Initalizing the map")
+	authPort := flag.Int("authport", 9090, "This is the authserver default port")
+	authHost := flag.String("authhost", "http://localhost", "This is the authserver default host")
+        flag.Parse()
+        server = fmt.Sprintf("%s:%d", *authHost, *authPort)
+}
+
+
+func getName(uuid string) string {
+  getUrl := fmt.Sprintf("%s/get?cookie=%s", server, uuid)
+  resp, err := http.Get(getUrl)
+  if err != nil {
+    log.Criticalf("Error getting authserver: %s" , err)
+    os.Exit(1)
+  }
+  log.Info(resp)
+  defer resp.Body.Close()
+  body, err := ioutil.ReadAll(resp.Body)
+  respBody := string(body)
+  firstBody := strings.Split(respBody, "<body>")
+  firstBodyHalf := firstBody[1]
+  secondBody := strings.Split(firstBodyHalf, "</body>")
+  secondBodyHalf := secondBody[0]
+  finalBody := strings.Trim(secondBodyHalf, "\n ")
+  //log.Infof("this is the body: %s", respBody)
+  //log.Infof("this is the body: %s", finalBody)
+  return finalBody
+  //return uuid
+}
+
+func setName(uuid string, name string){
+
 }
 
 // Handles the timeserver which shows the current time
@@ -64,13 +100,20 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 	const UTClayout = "15:04:05 MST"
 	personalString := ""
 	cookie := CookieManagement.SetCookie(w, r)
-	concurrentMap.RLock()
-	if len(concurrentMap.cookieMap[cookie.Value]) > 0 {
-		name := concurrentMap.cookieMap[cookie.Value]
+                //
+                fmt.Println(cookie)
+                //
+	//concurrentMap.RLock()
+        name := getName(cookie.Value)
+        //name := ""
+	if len(name) > 0 {
+	//if len(concurrentMap.cookieMap[cookie.Value]) > 0 {
+                //getName(cookie.Value)
+		//name := concurrentMap.cookieMap[cookie.Value]
 		personalString = fmt.Sprintf(", %s", name)
 		log.Debugf("User is logged in as: %s", name)
 	}
-	concurrentMap.RUnlock()
+	//concurrentMap.RUnlock()
 	timeTemplatesSlice := make([]string, len(templatesSlice))
 	copy(timeTemplatesSlice, templatesSlice)
 	timeTemplatesSlice = append(timeTemplatesSlice, fmt.Sprintf("%s/time.html", templatesFolder))
@@ -154,9 +197,11 @@ func renderLogin(w http.ResponseWriter, r *http.Request) {
 // associated with the cookie
 func checkLogin(w http.ResponseWriter, r *http.Request) (bool, string) {
 	cookie := CookieManagement.SetCookie(w, r)
-	concurrentMap.RLock()
-	name := concurrentMap.cookieMap[cookie.Value]
-	concurrentMap.RUnlock()
+	//concurrentMap.RLock()
+	//name := concurrentMap.cookieMap[cookie.Value]
+	//concurrentMap.RUnlock()
+        //getName(cookie.Value)
+        name := ""
 	if len(name) == 0 {
 		log.Info("There is no name stored for the UUID")
 		return false, ""
@@ -176,9 +221,13 @@ func loginPage(w http.ResponseWriter, r *http.Request) {
 	formName := r.FormValue("name")
 	if len(formName) > 0 {
 		cookie := CookieManagement.SetCookie(w, r)
-		concurrentMap.Lock()
-		concurrentMap.cookieMap[cookie.Value] = formName
-		concurrentMap.Unlock()
+                //
+                fmt.Println(cookie)
+                //
+		//concurrentMap.Lock()
+		//concurrentMap.cookieMap[cookie.Value] = formName
+		//concurrentMap.Unlock()
+                //setName(cookie.Value, formName)
 		log.Debugf("Name passed in: %s", formName)
 		http.Redirect(w, r, "/", 302)
 		return
@@ -193,10 +242,13 @@ func loginPage(w http.ResponseWriter, r *http.Request) {
 func logoutPage(w http.ResponseWriter, r *http.Request) {
 	printRequests(r)
 	cookie := CookieManagement.SetCookie(w, r)
-	concurrentMap.Lock()
-	name := concurrentMap.cookieMap[cookie.Value]
-	delete(concurrentMap.cookieMap, cookie.Value)
-	concurrentMap.Unlock()
+	//concurrentMap.Lock()
+	//name := concurrentMap.cookieMap[cookie.Value]
+	//delete(concurrentMap.cookieMap, cookie.Value)
+	//concurrentMap.Unlock()
+        //setName(cookie.Value, "")
+        //DELETE NAME SOMEHOW
+        name := ""
 	log.Debugf("Deleting %s and %s from the server", cookie.Value, name)
 	deletingCookie := &http.Cookie{Name: "uuid", Value: "s", Expires: time.Unix(1, 0), HttpOnly: true}
 	http.SetCookie(w, deletingCookie)
@@ -211,6 +263,7 @@ func logoutPage(w http.ResponseWriter, r *http.Request) {
 func printRequests(r *http.Request) {
 	urlPath := r.URL.Path
 	log.Infof("Request url path: %s", urlPath)
+        //likely have something about rand sleeping
 }
 
 // Sets up the templates slice
@@ -232,7 +285,7 @@ func main() {
 	//avgResponse := flag.Int("avg-response-ms", 1000, "This is the timeserver avg response time")
 	//deviation := flag.Int("deviation-ms", 1, "This is the timeserver deviation")
 	//maxInflight := flag.Int("max-inflight", 0, "This is the timeserver max inflight connections (0 is unlimited)")
-	flag.Parse()
+	//flag.Parse()
 	templatesFolder = *templatesFlag
 	templateSetup()
 	logFileName := fmt.Sprintf("etc/%s.xml", *logFile)
