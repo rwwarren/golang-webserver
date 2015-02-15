@@ -130,22 +130,26 @@ func setPath(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	formCookie := r.FormValue("cookie")
 	formName := r.FormValue("name")
-	if len(formCookie) == 0 || len(formName) == 0 {
+	if len(formCookie) == 0 {
+	//if len(formCookie) == 0 || len(formName) == 0 {
 		missingCookie := ""
 		missingName := ""
 		if len(formCookie) == 0 {
 			missingCookie = "Cookie is missing"
 		}
-		if len(formName) == 0 {
-			missingName = "Name is missing"
-		}
+		//if len(formName) == 0 {
+		//	missingName = "Name is missing"
+		//}
 		info := &Information{
 			Name:   missingName,
 			Cookie: missingCookie,
 		}
 		malformedRequest(w, r, info)
 		return
-	}
+	} else if len(formName) == 0 {
+                logout(formCookie)
+                return
+        }
 	//printRequests(r)
 	//log.Info("Error, url not found: These are not the URLs you are looking for.")
 	//w.WriteHeader(404)
@@ -203,14 +207,14 @@ func writeBackup() {
 		os.Exit(1)
 	}
       //TODO fix this!
-	//if _, fileErr := os.Stat(loadingFile); fileErr == nil {
-        //      log.Info("got here")
-	//      loadingFile = fmt.Sprintf("%s.bak", loadingFile)
-        //      log.Info("got here too")
-        //      deleteBackup()
+	if _, fileErr := os.Stat(loadingFile); fileErr == nil && !strings.Contains(loadingFile, ".bak") {
+              log.Info("got here")
+	      loadingFile = fmt.Sprintf("%s.bak", loadingFile)
+              log.Info("got here too")
+              deleteBackup()
 	//} else {
         //  log.Info(fileErr)
-        //}
+        }
 	writeError := ioutil.WriteFile(loadingFile, b, 0644)
 	if writeError != nil {
 		log.Errorf("error: %s", writeError)
@@ -222,6 +226,16 @@ func deleteBackup() {
 //func deleteBackup(loadingFile string) {
 	os.Remove(loadingFile)
         log.Info("here")
+}
+
+func logout(uuid string) {
+        log.Infof("Here is the uuid: %s", uuid)
+	concurrentMap.Lock()
+	//concurrentMap.cookieMap[formCookie] = formName
+	delete(concurrentMap.cookieMap, uuid)
+	concurrentMap.Unlock()
+        log.Infof("Logging user out: %s", uuid)
+        return
 }
 
 func main() {

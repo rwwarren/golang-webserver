@@ -89,6 +89,14 @@ func getName(uuid string) string {
 }
 
 func setName(uuid string, name string){
+  log.Infof("setting name with uuid: %s and name: ", uuid, name)
+  setUrl := fmt.Sprintf("%s/set?cookie=%s&name=%s", server, uuid, name)
+  resp, err := http.Get(setUrl)
+  if err != nil {
+    log.Criticalf("Error getting authserver: %s" , err)
+    os.Exit(1)
+  }
+  log.Info("Response: %s", resp)
 
 }
 
@@ -201,7 +209,8 @@ func checkLogin(w http.ResponseWriter, r *http.Request) (bool, string) {
 	//name := concurrentMap.cookieMap[cookie.Value]
 	//concurrentMap.RUnlock()
         //getName(cookie.Value)
-        name := ""
+        name := getName(cookie.Value)
+        //name := ""
 	if len(name) == 0 {
 		log.Info("There is no name stored for the UUID")
 		return false, ""
@@ -227,7 +236,7 @@ func loginPage(w http.ResponseWriter, r *http.Request) {
 		//concurrentMap.Lock()
 		//concurrentMap.cookieMap[cookie.Value] = formName
 		//concurrentMap.Unlock()
-                //setName(cookie.Value, formName)
+                setName(cookie.Value, formName)
 		log.Debugf("Name passed in: %s", formName)
 		http.Redirect(w, r, "/", 302)
 		return
@@ -246,7 +255,7 @@ func logoutPage(w http.ResponseWriter, r *http.Request) {
 	//name := concurrentMap.cookieMap[cookie.Value]
 	//delete(concurrentMap.cookieMap, cookie.Value)
 	//concurrentMap.Unlock()
-        //setName(cookie.Value, "")
+        setName(cookie.Value, "")
         //DELETE NAME SOMEHOW
         name := ""
 	log.Debugf("Deleting %s and %s from the server", cookie.Value, name)
