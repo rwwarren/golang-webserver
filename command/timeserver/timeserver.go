@@ -26,13 +26,16 @@ import (
 	"html/template"
 	"net/http"
 	"os"
-	//"sync"
+	"sync"
 	"time"
         //"rand"
         //"net"
         //"io/ioutil"
         "io/ioutil"
         "strings"
+        //"os/signal"
+        //"syscall"
+        //"reflect"
 )
 
 //// Stores the cookie information
@@ -50,6 +53,11 @@ type PageInformation struct {
 var templatesFolder string
 var templatesSlice []string
 var server string
+var maxInbound int
+var inboundRequests struct {
+	sync.RWMutex
+	currentRequests int
+}
 
 // Intitalizes the concurrentMap
 func init() {
@@ -61,10 +69,52 @@ func init() {
 	//log.Debug("Initalizing the map")
 	authPort := flag.Int("authport", 9090, "This is the authserver default port")
 	authHost := flag.String("authhost", "http://localhost", "This is the authserver default host")
+	inflight := flag.Int("max-inflight", 0, "Max number of inflight requests")
         flag.Parse()
         server = fmt.Sprintf("%s:%d", *authHost, *authPort)
+        inboundRequests = struct {
+            sync.RWMutex
+            currentRequests int
+        }{currentRequests: 0}
+        maxInbound = *inflight
 }
 
+func removeInboundRequest(){
+  inboundRequests.Lock()
+  inboundRequests.currentRequests--
+  currentRequests := inboundRequests.currentRequests
+  inboundRequests.Unlock()
+  log.Infof("Current inbound requests: %d", currentRequests)
+}
+
+func addInboundRequest(){
+  inboundRequests.Lock()
+  inboundRequests.currentRequests++
+  currentRequests := inboundRequests.currentRequests
+  inboundRequests.Unlock()
+  log.Infof("Current inbound requests: %d", currentRequests)
+}
+
+func canHaveMoreInboundRequests() bool {
+  inboundRequests.RLock()
+  currentInflight := inboundRequests.currentRequests
+  inboundRequests.RUnlock()
+  return (maxInbound == 0 || currentInflight < maxInbound)
+}
+
+func maxInboundError(w http.ResponseWriter, r *http.Request){
+  //max inbound error
+	printRequests(r)
+	log.Info("Error, too many inbound requests")
+	w.WriteHeader(503)
+	errorTemplatesSlice := make([]string, len(templatesSlice))
+	copy(errorTemplatesSlice, templatesSlice)
+	errorTemplatesSlice = append(errorTemplatesSlice, fmt.Sprintf("%s/503.html", templatesFolder))
+	var errorPage = template.Must(template.New("ErrorPage").ParseFiles(errorTemplatesSlice...))
+	errorPage.ExecuteTemplate(w, "template", "")
+        removeInboundRequest()
+	return
+}
 
 func getName(uuid string) string {
   getUrl := fmt.Sprintf("%s/get?cookie=%s", server, uuid)
@@ -103,6 +153,11 @@ func setName(uuid string, name string){
 // Handles the timeserver which shows the current time
 // for the local timezone
 func timeHandler(w http.ResponseWriter, r *http.Request) {
+        addInboundRequest()
+        if !canHaveMoreInboundRequests() {
+          maxInboundError(w, r)
+          return
+        }
 	printRequests(r)
 	const layout = "3:04:05 PM"
 	const UTClayout = "15:04:05 MST"
@@ -133,6 +188,7 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 		CurrentTime: currentTime,
 		UTCtime:     UTCTime,
 	}
+        removeInboundRequest()
 	timeTmpl.ExecuteTemplate(w, "template", data)
 	return
 }
@@ -281,6 +337,7 @@ func templateSetup() {
 	templatesSlice = append(templatesSlice, fmt.Sprintf("%s/menu.html", templatesFolder))
 }
 
+
 // Main handler that runs the server on the port or shows the version of the server
 func main() {
 	defer log.Flush()
@@ -320,6 +377,54 @@ func main() {
 		fmt.Println("Assignment Version: 3")
 		return
 	}
+        //
+        //c := make(chan os.Signal, 1)
+        //signal.Notify(c, os.Interrupt)
+        //signal.Notify(c, syscall.SIGTERM)
+        //c := make(chan os.Signal, 2)
+        //signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+        //go func() {
+        //  //for sig := range c {
+        //    //log.Infof("Here: %v %v", c, sig)
+        //    //pprof.StopCPUProfile()
+        //    sig := <-c
+        //    switch sig {
+        //    case os.Interrupt:
+        //        //handle SIGINT
+        //        cleanup()
+        //    case syscall.SIGTERM:
+        //        //handle SIGTERM
+        //        cleanup()
+        //        log.Info("get here!!")
+        //        //os.Exit(1)
+        //    }
+        //    cleanup()
+        //    os.Exit(1)
+        //  //}
+        //}()
+        //signalChan := make(chan os.Signal, 1)
+        //cleanupDone := make(chan bool)
+        //signal.Notify(signalChan, os.Interrupt)
+        //go func() {
+        //    for _ = range signalChan {
+        //        fmt.Println("\nReceived an interrupt, stopping services...\n")
+        //        //cleanup(services, c)
+        //        cleanup()
+        //        cleanupDone <- true
+        //        os.Exit(1)
+        //    }
+        //}()
+        //<-cleanupDone
+        //
+//        c := make(chan os.Signal, 1)
+//        signal.Notify(c, os.Interrupt)
+//        signal.Notify(c, syscall.SIGTERM)
+//        go func() {
+//            <-c
+//            cleanup()
+//            os.Exit(1)
+//        }() 
+        //
 	http.HandleFunc("/time", timeHandler)
 	http.HandleFunc("/index.html", indexPage)
 	http.HandleFunc("/login", loginPage)

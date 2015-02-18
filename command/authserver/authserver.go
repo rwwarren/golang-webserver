@@ -29,6 +29,7 @@ var templatesFolder string
 var templatesSlice []string
 var done bool
 var loadingFile string
+var backupFile string
 
 // Stores the cookie information
 var concurrentMap struct {
@@ -189,8 +190,17 @@ func backupServer(backupInterval int) {
 	}
 }
 
-func writeBackup() {
-//func writeBackup(loadingFile string) {
+func cleanup(){
+//func cleanup(sig chan os.Signal){
+  //<-sig
+  log.Info("cleanup")
+  writeBackup()
+  fmt.Println("asdfasdf")
+  //os.Exit(0)
+}
+
+//func writeBackup() {
+func writeBackup(BackupFilename string) {
 	//TODO fix this
 	concurrentMap.RLock()
 	backup := make(map[string]string)
@@ -276,6 +286,7 @@ func main() {
 	var portString = fmt.Sprintf(":%d", *port)
 	log.Infof("IpAddress and port: %s%s", ipAddr, portString)
 	loadingFile = fmt.Sprintf("backup/%s", *dumpfile)
+	backupFile = fmt.Sprintf("backup/%s", *dumpfile)
 	buildMap()
 	done = false
 	go backupServer(*backupInterval)
