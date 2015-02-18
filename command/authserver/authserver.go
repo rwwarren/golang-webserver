@@ -23,6 +23,7 @@ import (
 	//"json"
 	"encoding/json"
 	//"filepath"
+        "os/signal"
 )
 
 var templatesFolder string
@@ -51,9 +52,9 @@ type Information struct {
 	Cookie string
 }
 
-func buildMap() {
-//func buildMap(loadfile string) {
-	file, fileErr := ioutil.ReadFile(loadingFile)
+//func buildMap() {
+func buildMap(loadFile string) {
+	file, fileErr := ioutil.ReadFile(loadFile)
 	if fileErr != nil {
 		log.Errorf("file error: %s", fileErr)
 		//os.Exit(1)
@@ -184,18 +185,29 @@ func backupServer(backupInterval int) {
 	//func backupServer(done chan bool){
 	for !done {
 		time.Sleep(time.Duration(backupInterval) * time.Second)
-		writeBackup()
-		buildMap()
-		//deleteBackup()
+	        if _, fileErr := os.Stat(loadingFile); fileErr == nil && !strings.Contains(loadingFile, ".bak") {
+                      //log.Info("got here")
+	              loadingFile = fmt.Sprintf("%s.bak", loadingFile)
+                      //log.Info("got here too")
+                      deleteBackup(loadingFile)
+		      writeBackup(loadingFile)
+		      buildMap(loadingFile)
+		      deleteBackup(loadingFile)
+                }
+		//writeBackup(loadingFile)
+		//buildMap(loadingFile)
+		//deleteBackup(loadingFile)
 	}
 }
 
 func cleanup(){
 //func cleanup(sig chan os.Signal){
   //<-sig
-  log.Info("cleanup")
-  writeBackup()
-  fmt.Println("asdfasdf")
+  //log.Info("cleanup")
+  writeBackup(backupFile)
+  deleteBackup(loadingFile)
+  log.Info("Cleanup Complete")
+  fmt.Println("Cleanup Complete")
   //os.Exit(0)
 }
 
@@ -213,33 +225,36 @@ func writeBackup(BackupFilename string) {
 	concurrentMap.RUnlock()
 	b, err := json.Marshal(backup)
 	if err != nil {
-		log.Errorf("error: %s", err)
+		log.Errorf("error reading json: %s", err)
 		os.Exit(1)
 	}
       //TODO fix this!
-	if _, fileErr := os.Stat(loadingFile); fileErr == nil && !strings.Contains(loadingFile, ".bak") {
-              log.Info("got here")
-	      loadingFile = fmt.Sprintf("%s.bak", loadingFile)
-              log.Info("got here too")
-              deleteBackup()
-	//} else {
-        //  log.Info(fileErr)
-        }
-	writeError := ioutil.WriteFile(loadingFile, b, 0644)
+	//if _, fileErr := os.Stat(loadingFile); fileErr == nil && !strings.Contains(loadingFile, ".bak") {
+        //      log.Info("got here")
+	//      loadingFile = fmt.Sprintf("%s.bak", loadingFile)
+        //      log.Info("got here too")
+        //      deleteBackup()
+	////} else {
+        ////  log.Info(fileErr)
+        //}
+	writeError := ioutil.WriteFile(BackupFilename, b, 0644)
 	if writeError != nil {
 		log.Errorf("error: %s", writeError)
 		os.Exit(1)
 	}
+        log.Infof("Backup complete to: %s", BackupFilename)
 }
 
-func deleteBackup() {
-//func deleteBackup(loadingFile string) {
-	os.Remove(loadingFile)
-        log.Info("here")
+//func deleteBackup() {
+func deleteBackup(filename string) {
+  if strings.Contains(loadingFile, ".bak") {
+        log.Infof("Deleting backup file: %s", filename)
+	os.Remove(filename)
+  }
 }
 
 func logout(uuid string) {
-        log.Infof("Here is the uuid: %s", uuid)
+        //log.Infof("Here is the uuid: %s", uuid)
 	concurrentMap.Lock()
 	//concurrentMap.cookieMap[formCookie] = formName
 	delete(concurrentMap.cookieMap, uuid)
@@ -287,11 +302,22 @@ func main() {
 	log.Infof("IpAddress and port: %s%s", ipAddr, portString)
 	loadingFile = fmt.Sprintf("backup/%s", *dumpfile)
 	backupFile = fmt.Sprintf("backup/%s", *dumpfile)
-	buildMap()
+	buildMap(loadingFile)
 	done = false
 	go backupServer(*backupInterval)
 	//go backupServer(*backupInterval, loadingFile)
 	//go backupServer(done)
+        signalChan := make(chan os.Signal, 1)
+        signal.Notify(signalChan, os.Interrupt)
+        go func() {
+            for _ = range signalChan {
+                fmt.Println("\nReceived shutdown command. Cleaning up...\n")
+                //cleanup(services, c)
+                cleanup()
+                //cleanupDone <- true
+                os.Exit(1)
+            }
+        }()
 	http.HandleFunc("/get", getPath)
 	http.HandleFunc("/set", setPath)
 	http.HandleFunc("/", errorer)

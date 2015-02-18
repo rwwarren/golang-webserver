@@ -18,7 +18,7 @@
 package main
 
 import (
-	"../../cookieManagement/"
+	//"../../cookieManagement/"
 	log "../../seelog-master/"
 	//log "../seelog-master/"
 	"flag"
@@ -26,9 +26,10 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+        "os/exec"
 	"sync"
 	"time"
-        //"rand"
+        "math/rand"
         //"net"
         //"io/ioutil"
         "io/ioutil"
@@ -54,6 +55,9 @@ var templatesFolder string
 var templatesSlice []string
 var server string
 var maxInbound int
+var authTimeout int
+var avgResponse int
+var deviation int
 var inboundRequests struct {
 	sync.RWMutex
 	currentRequests int
@@ -116,12 +120,42 @@ func maxInboundError(w http.ResponseWriter, r *http.Request){
 	return
 }
 
-func getName(uuid string) string {
+func deleteCookie(w http.ResponseWriter, r *http.Request){
+	deletingCookie := &http.Cookie{Name: "uuid", Value: "s", Expires: time.Unix(1, 0), HttpOnly: true}
+	http.SetCookie(w, deletingCookie)
+}
+// Set and returns the cookie from the request
+func setCookie(w http.ResponseWriter, r *http.Request) *http.Cookie {
+	checkCookie, cookieError := r.Cookie("uuid")
+	if cookieError == nil {
+		log.Infof("Cookie is already set: %s", checkCookie.Value)
+		return checkCookie
+	}
+	uuid, err := exec.Command("uuidgen").Output()
+	if err != nil {
+		log.Infof("Error something went wrong with uuidgen: %s", err)
+		os.Exit(1)
+	}
+	uuidLen := len(uuid) - 1
+	uuidString := string(uuid[:uuidLen])
+	log.Infof("Setting cookie with UUID: %s", uuidString)
+	cookie := &http.Cookie{Name: "uuid", Value: uuidString, Expires: time.Now().Add(356 * 24 * time.Hour), HttpOnly: true}
+	http.SetCookie(w, cookie)
+	return cookie
+}
+
+func getName(uuid string, w http.ResponseWriter, r *http.Request) string {
   getUrl := fmt.Sprintf("%s/get?cookie=%s", server, uuid)
-  resp, err := http.Get(getUrl)
+  timeout := time.Duration(time.Duration(authTimeout) * time.Millisecond)
+  client := http.Client{
+        Timeout: timeout,
+  }
+  resp, err := client.Get(getUrl)
+  //resp, err := http.Get(getUrl)
   if err != nil {
     log.Criticalf("Error getting authserver: %s" , err)
-    os.Exit(1)
+    deleteCookie(w, r)
+    //os.Exit(1)
   }
   log.Info(resp)
   defer resp.Body.Close()
@@ -153,6 +187,14 @@ func setName(uuid string, name string){
 // Handles the timeserver which shows the current time
 // for the local timezone
 func timeHandler(w http.ResponseWriter, r *http.Request) {
+        //sample := rand.NormFloat64() * deviation + avgResponse
+        //dev := int64(deviation)
+        waitTime := rand.NormFloat64() * float64(deviation) + float64(avgResponse)
+        if waitTime < 0 {
+          waitTime *= -1
+        }
+        log.Infof("Artifically creating delay for: %v milliseconds", waitTime)
+        time.Sleep(time.Duration(waitTime) * time.Millisecond)
         addInboundRequest()
         if !canHaveMoreInboundRequests() {
           maxInboundError(w, r)
@@ -162,12 +204,13 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 	const layout = "3:04:05 PM"
 	const UTClayout = "15:04:05 MST"
 	personalString := ""
-	cookie := CookieManagement.SetCookie(w, r)
+	cookie := setCookie(w, r)
+	//cookie := CookieManagement.SetCookie(w, r)
                 //
                 fmt.Println(cookie)
                 //
 	//concurrentMap.RLock()
-        name := getName(cookie.Value)
+        name := getName(cookie.Value, w, r)
         //name := ""
 	if len(name) > 0 {
 	//if len(concurrentMap.cookieMap[cookie.Value]) > 0 {
@@ -260,12 +303,13 @@ func renderLogin(w http.ResponseWriter, r *http.Request) {
 // Checks the if the user is logged in and if there is a user
 // associated with the cookie
 func checkLogin(w http.ResponseWriter, r *http.Request) (bool, string) {
-	cookie := CookieManagement.SetCookie(w, r)
+	cookie := setCookie(w, r)
+	//cookie := CookieManagement.SetCookie(w, r)
 	//concurrentMap.RLock()
 	//name := concurrentMap.cookieMap[cookie.Value]
 	//concurrentMap.RUnlock()
         //getName(cookie.Value)
-        name := getName(cookie.Value)
+        name := getName(cookie.Value, w, r)
         //name := ""
 	if len(name) == 0 {
 		log.Info("There is no name stored for the UUID")
@@ -285,7 +329,8 @@ func loginPage(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	formName := r.FormValue("name")
 	if len(formName) > 0 {
-		cookie := CookieManagement.SetCookie(w, r)
+		cookie := setCookie(w, r)
+		//cookie := CookieManagement.SetCookie(w, r)
                 //
                 fmt.Println(cookie)
                 //
@@ -306,7 +351,8 @@ func loginPage(w http.ResponseWriter, r *http.Request) {
 // Here is the logout page that will remove the cookies assosiated with the user
 func logoutPage(w http.ResponseWriter, r *http.Request) {
 	printRequests(r)
-	cookie := CookieManagement.SetCookie(w, r)
+	cookie := setCookie(w, r)
+	//cookie := CookieManagement.SetCookie(w, r)
 	//concurrentMap.Lock()
 	//name := concurrentMap.cookieMap[cookie.Value]
 	//delete(concurrentMap.cookieMap, cookie.Value)
@@ -315,8 +361,9 @@ func logoutPage(w http.ResponseWriter, r *http.Request) {
         //DELETE NAME SOMEHOW
         name := ""
 	log.Debugf("Deleting %s and %s from the server", cookie.Value, name)
-	deletingCookie := &http.Cookie{Name: "uuid", Value: "s", Expires: time.Unix(1, 0), HttpOnly: true}
-	http.SetCookie(w, deletingCookie)
+        deleteCookie(w, r)
+	//deletingCookie := &http.Cookie{Name: "uuid", Value: "s", Expires: time.Unix(1, 0), HttpOnly: true}
+	//http.SetCookie(w, deletingCookie)
 	logoutTemplatesSlice := make([]string, len(templatesSlice))
 	copy(logoutTemplatesSlice, templatesSlice)
 	logoutTemplatesSlice = append(logoutTemplatesSlice, fmt.Sprintf("%s/logout.html", templatesFolder))
@@ -347,9 +394,9 @@ func main() {
 	templatesFlag := flag.String("templates", "templates", "This is the templates folder name")
 	//authPort := flag.Int("authport", 9090, "This is the authserver default port")
 	//authHost := flag.String("authhost", "localhost", "This is the authserver default host")
-	//authTimeout := flag.Int("authtimeout-ms", 1000, "This is the authserver timeout")
-	//avgResponse := flag.Int("avg-response-ms", 1000, "This is the timeserver avg response time")
-	//deviation := flag.Int("deviation-ms", 1, "This is the timeserver deviation")
+	authTimeout = *flag.Int("authtimeout-ms", 1000, "This is the authserver timeout")
+	avgResponse = *flag.Int("avg-response-ms", 1000, "This is the timeserver avg response time")
+	deviation = *flag.Int("deviation-ms", 10, "This is the timeserver deviation")
 	//maxInflight := flag.Int("max-inflight", 0, "This is the timeserver max inflight connections (0 is unlimited)")
 	//flag.Parse()
 	templatesFolder = *templatesFlag
