@@ -19,6 +19,7 @@ package main
 
 import (
 	log "../../seelog-master/"
+	"bytes"
 	"flag"
 	"fmt"
 	"html/template"
@@ -59,14 +60,21 @@ func init() {
 	authPort := flag.Int("authport", 9090, "This is the authserver default port")
 	authHost := flag.String("authhost", "http://localhost", "This is the authserver default host")
 	inflight := flag.Int("max-inflight", 0, "Max number of inflight requests")
-	port = *flag.Int("port", 8080, "Set the server port, default port: 8080")
-	version = *flag.Bool("V", false, "Shows the version of the timeserver")
-	logFile = *flag.String("log", "logConfig", "This is the logger configuration file")
-	templatesFlag = *flag.String("templates", "templates", "This is the templates folder name")
-	authTimeout = *flag.Int("authtimeout-ms", 1000, "This is the authserver timeout")
-	avgResponse = *flag.Int("avg-response-ms", 1000, "This is the timeserver avg response time")
-	deviation = *flag.Int("deviation-ms", 10, "This is the timeserver deviation")
+	thePort := flag.Int("port", 8080, "Set the server port, default port: 8080")
+	theVersion := flag.Bool("V", false, "Shows the version of the timeserver")
+	theLogFile := flag.String("log", "logConfig", "This is the logger configuration file")
+	theTemplatesFlag := flag.String("templates", "templates", "This is the templates folder name")
+	theAuthTimeout := flag.Int("authtimeout-ms", 1000, "This is the authserver timeout")
+	theAvgResponse := flag.Int("avg-response-ms", 1000, "This is the timeserver avg response time")
+	theDeviation := flag.Int("deviation-ms", 10, "This is the timeserver deviation")
 	flag.Parse()
+	version = *theVersion
+	deviation = *theDeviation
+	avgResponse = *theAvgResponse
+	authTimeout = *theAuthTimeout
+	port = *thePort
+	logFile = *theLogFile
+	templatesFlag = *theTemplatesFlag
 	server = fmt.Sprintf("%s:%d", *authHost, *authPort)
 	inboundRequests = struct {
 		sync.RWMutex
@@ -369,7 +377,17 @@ func main() {
 	log.Info("Server has started up!")
 	if version {
 		log.Info("Printing out the version")
-		fmt.Println("Assignment Version: 3")
+		cmd := exec.Command("bash", "-c", "git describe --tags")
+		var out bytes.Buffer
+		cmd.Stdout = &out
+		err := cmd.Run()
+		if err != nil {
+			log.Critical(err)
+		}
+		gitVersion := fmt.Sprintf("%v", out.String())
+		fmt.Printf("Version according to git: %v", gitVersion)
+		fmt.Println("Assignment Version: 4")
+		os.Exit(0)
 		return
 	}
 	http.HandleFunc("/time", timeHandler)
