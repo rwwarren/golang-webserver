@@ -8,19 +8,19 @@
 package main
 
 import (
-	"net/http"
-	"os"
 	log "../../seelog-master/"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"html/template"
 	"io/ioutil"
 	"net"
+	"net/http"
+	"os"
+	"os/signal"
 	"strings"
 	"sync"
 	"time"
-	"encoding/json"
-        "os/signal"
 )
 
 var templatesFolder string
@@ -58,7 +58,7 @@ func buildMap(loadFile string) {
 	file, fileErr := ioutil.ReadFile(loadFile)
 	if fileErr != nil {
 		log.Errorf("file error: %s", fileErr)
-                return
+		return
 	}
 	concurrentMap.Lock()
 	err := json.Unmarshal(file, &concurrentMap.cookieMap)
@@ -123,9 +123,9 @@ func setPath(w http.ResponseWriter, r *http.Request) {
 		malformedRequest(w, r, info)
 		return
 	} else if len(formName) == 0 {
-                logout(formCookie)
-                return
-        }
+		logout(formCookie)
+		return
+	}
 	setPageTemplatesSlice := make([]string, len(templatesSlice))
 	copy(setPageTemplatesSlice, templatesSlice)
 	setPageTemplatesSlice = append(setPageTemplatesSlice, fmt.Sprintf("%s/set.html", templatesFolder))
@@ -151,26 +151,26 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 
 // Backs up the server into json format
 func backupServer(backupInterval int) {
-  //TODO fix this?
+	//TODO fix this?
 	for !done {
 		time.Sleep(time.Duration(backupInterval) * time.Second)
-	        if _, fileErr := os.Stat(loadingFile); fileErr == nil && !strings.Contains(loadingFile, ".bak") {
-	              loadingFile = fmt.Sprintf("%s.bak", loadingFile)
-                      deleteBackup(loadingFile)
-		      writeBackup(loadingFile)
-		      buildMap(loadingFile)
-		      deleteBackup(loadingFile)
-                }
+		if _, fileErr := os.Stat(loadingFile); fileErr == nil && !strings.Contains(loadingFile, ".bak") {
+			loadingFile = fmt.Sprintf("%s.bak", loadingFile)
+			deleteBackup(loadingFile)
+			writeBackup(loadingFile)
+			buildMap(loadingFile)
+			deleteBackup(loadingFile)
+		}
 	}
 }
 
 // Cleans up the server and saves it before quitting, after the interrupt command
-// is recieved 
-func cleanup(){
-  writeBackup(backupFile)
-  deleteBackup(loadingFile)
-  log.Info("Cleanup Complete")
-  fmt.Println("Cleanup Complete")
+// is recieved
+func cleanup() {
+	writeBackup(backupFile)
+	deleteBackup(loadingFile)
+	log.Info("Cleanup Complete")
+	fmt.Println("Cleanup Complete")
 }
 
 // Writes the user information to the file passed in
@@ -193,16 +193,16 @@ func writeBackup(BackupFilename string) {
 		log.Errorf("error: %s", writeError)
 		os.Exit(1)
 	}
-        log.Infof("Backup complete to: %s", BackupFilename)
+	log.Infof("Backup complete to: %s", BackupFilename)
 }
 
 // Deletes the copy of the backup file
 func deleteBackup(filename string) {
-  //TODO fix this 
-  if strings.Contains(loadingFile, ".bak") {
-        log.Infof("Deleting backup file: %s", filename)
-	os.Remove(filename)
-  }
+	//TODO fix this
+	if strings.Contains(loadingFile, ".bak") {
+		log.Infof("Deleting backup file: %s", filename)
+		os.Remove(filename)
+	}
 }
 
 // Logs the user out of the server
@@ -210,8 +210,8 @@ func logout(uuid string) {
 	concurrentMap.Lock()
 	delete(concurrentMap.cookieMap, uuid)
 	concurrentMap.Unlock()
-        log.Infof("Logging user out: %s", uuid)
-        return
+	log.Infof("Logging user out: %s", uuid)
+	return
 }
 
 // Main function of the authserver. Runs by default on port 9090
@@ -257,15 +257,15 @@ func main() {
 	buildMap(loadingFile)
 	done = false
 	go backupServer(*backupInterval)
-        signalChan := make(chan os.Signal, 1)
-        signal.Notify(signalChan, os.Interrupt)
-        go func() {
-            for _ = range signalChan {
-                fmt.Println("\nReceived shutdown command. Cleaning up...\n")
-                cleanup()
-                os.Exit(1)
-            }
-        }()
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt)
+	go func() {
+		for _ = range signalChan {
+			fmt.Println("\nReceived shutdown command. Cleaning up...\n")
+			cleanup()
+			os.Exit(1)
+		}
+	}()
 	http.HandleFunc("/get", getPath)
 	http.HandleFunc("/set", setPath)
 	http.HandleFunc("/", errorer)

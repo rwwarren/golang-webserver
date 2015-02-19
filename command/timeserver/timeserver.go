@@ -22,14 +22,14 @@ import (
 	"flag"
 	"fmt"
 	"html/template"
+	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os"
-        "os/exec"
+	"os/exec"
+	"strings"
 	"sync"
 	"time"
-        "math/rand"
-        "io/ioutil"
-        "strings"
 )
 
 type PageInformation struct {
@@ -66,43 +66,43 @@ func init() {
 	authTimeout = *flag.Int("authtimeout-ms", 1000, "This is the authserver timeout")
 	avgResponse = *flag.Int("avg-response-ms", 1000, "This is the timeserver avg response time")
 	deviation = *flag.Int("deviation-ms", 10, "This is the timeserver deviation")
-        flag.Parse()
-        server = fmt.Sprintf("%s:%d", *authHost, *authPort)
-        inboundRequests = struct {
-            sync.RWMutex
-            currentRequests int
-        }{currentRequests: 0}
-        maxInbound = *inflight
+	flag.Parse()
+	server = fmt.Sprintf("%s:%d", *authHost, *authPort)
+	inboundRequests = struct {
+		sync.RWMutex
+		currentRequests int
+	}{currentRequests: 0}
+	maxInbound = *inflight
 }
 
 // Decreases the amount of current inbound requests on the server
-func removeInboundRequest(){
-  inboundRequests.Lock()
-  inboundRequests.currentRequests--
-  currentRequests := inboundRequests.currentRequests
-  inboundRequests.Unlock()
-  log.Infof("Current inbound requests: %d", currentRequests)
+func removeInboundRequest() {
+	inboundRequests.Lock()
+	inboundRequests.currentRequests--
+	currentRequests := inboundRequests.currentRequests
+	inboundRequests.Unlock()
+	log.Infof("Current inbound requests: %d", currentRequests)
 }
 
 // Increases the amount of current inbound requests on the server
-func addInboundRequest(){
-  inboundRequests.Lock()
-  inboundRequests.currentRequests++
-  currentRequests := inboundRequests.currentRequests
-  inboundRequests.Unlock()
-  log.Infof("Current inbound requests: %d", currentRequests)
+func addInboundRequest() {
+	inboundRequests.Lock()
+	inboundRequests.currentRequests++
+	currentRequests := inboundRequests.currentRequests
+	inboundRequests.Unlock()
+	log.Infof("Current inbound requests: %d", currentRequests)
 }
 
 // Returns true if you can have more inbound requests
 func canHaveMoreInboundRequests() bool {
-  inboundRequests.RLock()
-  currentInflight := inboundRequests.currentRequests
-  inboundRequests.RUnlock()
-  return (maxInbound == 0 || currentInflight < maxInbound)
+	inboundRequests.RLock()
+	currentInflight := inboundRequests.currentRequests
+	inboundRequests.RUnlock()
+	return (maxInbound == 0 || currentInflight < maxInbound)
 }
 
 // Error page for there being too many inbound requests on the server
-func maxInboundError(w http.ResponseWriter, r *http.Request){
+func maxInboundError(w http.ResponseWriter, r *http.Request) {
 	printRequests(r)
 	log.Info("Error, too many inbound requests")
 	w.WriteHeader(503)
@@ -111,12 +111,12 @@ func maxInboundError(w http.ResponseWriter, r *http.Request){
 	errorTemplatesSlice = append(errorTemplatesSlice, fmt.Sprintf("%s/503.html", templatesFolder))
 	var errorPage = template.Must(template.New("ErrorPage").ParseFiles(errorTemplatesSlice...))
 	errorPage.ExecuteTemplate(w, "template", "")
-        removeInboundRequest()
+	removeInboundRequest()
 	return
 }
 
 // Deletes the cookie associated with a resopnse and sets a new one
-func deleteCookie(w http.ResponseWriter, r *http.Request){
+func deleteCookie(w http.ResponseWriter, r *http.Request) {
 	deletingCookie := &http.Cookie{Name: "uuid", Value: "s", Expires: time.Unix(1, 0), HttpOnly: true}
 	http.SetCookie(w, deletingCookie)
 }
@@ -143,62 +143,62 @@ func setCookie(w http.ResponseWriter, r *http.Request) *http.Cookie {
 
 // Gets the username associated with the cookie
 func getName(uuid string, w http.ResponseWriter, r *http.Request) string {
-  getUrl := fmt.Sprintf("%s/get?cookie=%s", server, uuid)
-  timeout := time.Duration(time.Duration(authTimeout) * time.Millisecond)
-  client := http.Client{
-        Timeout: timeout,
-  }
-  resp, err := client.Get(getUrl)
-  if err != nil {
-    log.Criticalf("Error getting authserver: %s" , err)
-    deleteCookie(w, r)
-    return ""
-  }
-  log.Infof("Response from the authserver: %s", resp)
-  defer resp.Body.Close()
-  body, err := ioutil.ReadAll(resp.Body)
-  respBody := string(body)
-  firstBody := strings.Split(respBody, "<body>")
-  firstBodyHalf := firstBody[1]
-  secondBody := strings.Split(firstBodyHalf, "</body>")
-  secondBodyHalf := secondBody[0]
-  finalBody := strings.Trim(secondBodyHalf, "\n ")
-  return finalBody
+	getUrl := fmt.Sprintf("%s/get?cookie=%s", server, uuid)
+	timeout := time.Duration(time.Duration(authTimeout) * time.Millisecond)
+	client := http.Client{
+		Timeout: timeout,
+	}
+	resp, err := client.Get(getUrl)
+	if err != nil {
+		log.Criticalf("Error getting authserver: %s", err)
+		deleteCookie(w, r)
+		return ""
+	}
+	log.Infof("Response from the authserver: %s", resp)
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	respBody := string(body)
+	firstBody := strings.Split(respBody, "<body>")
+	firstBodyHalf := firstBody[1]
+	secondBody := strings.Split(firstBodyHalf, "</body>")
+	secondBodyHalf := secondBody[0]
+	finalBody := strings.Trim(secondBodyHalf, "\n ")
+	return finalBody
 }
 
 // Sends the name associated with the cookie to the authserver
-func setName(uuid string, name string){
-  log.Infof("setting name with uuid: %s and name: ", uuid, name)
-  setUrl := fmt.Sprintf("%s/set?cookie=%s&name=%s", server, uuid, name)
-  resp, err := http.Get(setUrl)
-  if err != nil {
-    log.Criticalf("Error getting authserver: %s" , err)
-    os.Exit(1)
-  }
-  log.Info("Response: %s", resp)
+func setName(uuid string, name string) {
+	log.Infof("setting name with uuid: %s and name: ", uuid, name)
+	setUrl := fmt.Sprintf("%s/set?cookie=%s&name=%s", server, uuid, name)
+	resp, err := http.Get(setUrl)
+	if err != nil {
+		log.Criticalf("Error getting authserver: %s", err)
+		os.Exit(1)
+	}
+	log.Info("Response: %s", resp)
 
 }
 
 // Handles the timeserver which shows the current time
 // for the local timezone
 func timeHandler(w http.ResponseWriter, r *http.Request) {
-        waitTime := rand.NormFloat64() * float64(deviation) + float64(avgResponse)
-        if waitTime < 0 {
-          waitTime *= -1
-        }
-        log.Infof("Artifically creating delay for: %v milliseconds", waitTime)
-        time.Sleep(time.Duration(waitTime) * time.Millisecond)
-        addInboundRequest()
-        if !canHaveMoreInboundRequests() {
-          maxInboundError(w, r)
-          return
-        }
+	waitTime := rand.NormFloat64()*float64(deviation) + float64(avgResponse)
+	if waitTime < 0 {
+		waitTime *= -1
+	}
+	log.Infof("Artifically creating delay for: %v milliseconds", waitTime)
+	time.Sleep(time.Duration(waitTime) * time.Millisecond)
+	addInboundRequest()
+	if !canHaveMoreInboundRequests() {
+		maxInboundError(w, r)
+		return
+	}
 	printRequests(r)
 	const layout = "3:04:05 PM"
 	const UTClayout = "15:04:05 MST"
 	personalString := ""
-        isLoggedIn, name := checkLogin(w, r)
-        if isLoggedIn {
+	isLoggedIn, name := checkLogin(w, r)
+	if isLoggedIn {
 		personalString = fmt.Sprintf(", %s", name)
 		log.Debugf("User is logged in as: %s", name)
 	}
@@ -213,7 +213,7 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 		CurrentTime: currentTime,
 		UTCtime:     UTCTime,
 	}
-        removeInboundRequest()
+	removeInboundRequest()
 	timeTmpl.ExecuteTemplate(w, "template", data)
 	return
 }
@@ -286,7 +286,7 @@ func renderLogin(w http.ResponseWriter, r *http.Request) {
 // associated with the cookie
 func checkLogin(w http.ResponseWriter, r *http.Request) (bool, string) {
 	cookie := setCookie(w, r)
-        name := getName(cookie.Value, w, r)
+	name := getName(cookie.Value, w, r)
 	if len(name) == 0 {
 		log.Info("There is no name stored for the UUID")
 		return false, ""
@@ -306,7 +306,7 @@ func loginPage(w http.ResponseWriter, r *http.Request) {
 	formName := r.FormValue("name")
 	if len(formName) > 0 {
 		cookie := setCookie(w, r)
-                setName(cookie.Value, formName)
+		setName(cookie.Value, formName)
 		log.Debugf("Name passed in: %s", formName)
 		http.Redirect(w, r, "/", 302)
 		return
@@ -321,10 +321,10 @@ func loginPage(w http.ResponseWriter, r *http.Request) {
 func logoutPage(w http.ResponseWriter, r *http.Request) {
 	printRequests(r)
 	cookie := setCookie(w, r)
-        setName(cookie.Value, "")
-        name := ""
+	setName(cookie.Value, "")
+	name := ""
 	log.Debugf("Deleting %s and %s from the server", cookie.Value, name)
-        deleteCookie(w, r)
+	deleteCookie(w, r)
 	logoutTemplatesSlice := make([]string, len(templatesSlice))
 	copy(logoutTemplatesSlice, templatesSlice)
 	logoutTemplatesSlice = append(logoutTemplatesSlice, fmt.Sprintf("%s/logout.html", templatesFolder))
@@ -343,7 +343,6 @@ func templateSetup() {
 	templatesSlice = append(templatesSlice, fmt.Sprintf("%s/template.html", templatesFolder))
 	templatesSlice = append(templatesSlice, fmt.Sprintf("%s/menu.html", templatesFolder))
 }
-
 
 // Main handler that runs the server on the port or shows the version of the server
 func main() {
