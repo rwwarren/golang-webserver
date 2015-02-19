@@ -4,6 +4,12 @@
 // Authserver. This tracks all the user logged in information
 // it stores infomation about the user to make sure that another
 // server can see if the user is logged in or not
+//
+// There are a couple flags for this program:
+// "-checkpoint-interval" is the authserver backup interval
+// "-dumpfile" is the authserver backup file
+// "-log" is the logger configuration file
+// "-port" is the auth server port
 
 package main
 
@@ -151,7 +157,6 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 
 // Backs up the server into json format
 func backupServer(backupInterval int) {
-	//TODO fix this?
 	for !done {
 		time.Sleep(time.Duration(backupInterval) * time.Second)
 		if _, fileErr := os.Stat(loadingFile); fileErr == nil && !strings.Contains(loadingFile, ".bak") {
@@ -159,7 +164,10 @@ func backupServer(backupInterval int) {
 			deleteBackup(loadingFile)
 			writeBackup(loadingFile)
 			buildMap(loadingFile)
+		} else if strings.Contains(loadingFile, ".bak") {
 			deleteBackup(loadingFile)
+			writeBackup(loadingFile)
+			buildMap(loadingFile)
 		}
 	}
 }
@@ -176,7 +184,6 @@ func cleanup() {
 // Writes the user information to the file passed in
 // to make sure in case of shutdown there is a copy
 func writeBackup(BackupFilename string) {
-	//TODO fix this
 	concurrentMap.RLock()
 	backup := make(map[string]string)
 	for k, v := range concurrentMap.cookieMap {
@@ -198,8 +205,7 @@ func writeBackup(BackupFilename string) {
 
 // Deletes the copy of the backup file
 func deleteBackup(filename string) {
-	//TODO fix this
-	if strings.Contains(loadingFile, ".bak") {
+	if strings.Contains(filename, ".bak") {
 		log.Infof("Deleting backup file: %s", filename)
 		os.Remove(filename)
 	}
@@ -219,7 +225,7 @@ func main() {
 	defer log.Flush()
 	port := flag.Int("port", 9090, "Set the server port, default port: 9090")
 	dumpfile := flag.String("dumpfile", "backup", "This is the authserver dump file")
-	backupInterval := flag.Int("checkpoint-interval", 1, "This is the authserver backup interval")
+	backupInterval := flag.Int("checkpoint-interval", 10, "This is the authserver backup interval")
 	logFile := flag.String("log", "logConfig", "This is the logger configuration file")
 	flag.Parse()
 	logFileName := fmt.Sprintf("etc/%s.xml", *logFile)
