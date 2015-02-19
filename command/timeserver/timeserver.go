@@ -14,6 +14,13 @@
 // "-V" will show the version and then quit.
 // "-log FILENAME" pass in the log configuration file and it
 // will load it from etc/FILENAME.xml
+// "-authhost" is the authhost server
+// "-authport" is the authhost server port
+// "-authtimeout-ms" is the authserver timeout (ms)
+// "-avg-response-ms" is the average response time
+// "-deviation-ms" is the average response time deviation
+// "-max-inflight" is max concurrent connections (0 is unlimited)
+// "-templates" is the templates directory
 
 package main
 
@@ -165,11 +172,11 @@ func getName(uuid string, w http.ResponseWriter, r *http.Request) string {
 	log.Infof("Response from the authserver: %s", resp)
 	defer resp.Body.Close()
 	status := resp.StatusCode
-        if status != 200 {
-          log.Critical("Something is likely wrong with the authserver")
-          log.Criticalf("Error getting 200 Status Code from authServer: %v", status)
-          return ""
-        }
+	if status != 200 {
+		log.Critical("Something is likely wrong with the authserver")
+		log.Criticalf("Error getting 200 Status Code from authServer: %v", status)
+		return ""
+	}
 	body, err := ioutil.ReadAll(resp.Body)
 	respBody := string(body)
 	firstBody := strings.Split(respBody, "<body>")
@@ -190,11 +197,11 @@ func setName(uuid string, name string) {
 		os.Exit(1)
 	}
 	status := resp.StatusCode
-        if status != 200 {
-          log.Critical("Something is likely wrong with the authserver")
-          log.Criticalf("Error getting 200 Status Code from authServer: %v", status)
-          return
-        }
+	if status != 200 {
+		log.Critical("Something is likely wrong with the authserver")
+		log.Criticalf("Error getting 200 Status Code from authServer: %v", status)
+		return
+	}
 	log.Info("Response: %s", resp)
 }
 
