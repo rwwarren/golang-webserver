@@ -1,28 +1,25 @@
 // (C) Ryan Warren 2015
 // Authserver
 //
-//
+// Authserver. This tracks all the user logged in information
+// it stores infomation about the user to make sure that another
+// server can see if the user is logged in or not
 
 package main
 
 import (
 	"net/http"
 	"os"
-	//"os/exec"
 	log "../../seelog-master/"
 	"flag"
 	"fmt"
 	"html/template"
 	"io/ioutil"
 	"net"
-	"os/exec"
 	"strings"
 	"sync"
 	"time"
-	//"ioutil"
-	//"json"
 	"encoding/json"
-	//"filepath"
         "os/signal"
 )
 
@@ -38,6 +35,7 @@ var concurrentMap struct {
 	cookieMap map[string]string
 }
 
+// Initalizes the authserver with the important user storage things
 func init() {
 	templatesFolder = "templates"
 	templatesSlice = append(templatesSlice, fmt.Sprintf("%s/template.html", templatesFolder))
@@ -47,52 +45,31 @@ func init() {
 	}{cookieMap: make(map[string]string)}
 }
 
+// Information about the user, their cookie and username
 type Information struct {
 	Name   string
 	Cookie string
 }
 
-//func buildMap() {
+// Builds the user map based off the file passed in.
+// It must be in json format. Will not crash if the
+// file does not exist
 func buildMap(loadFile string) {
 	file, fileErr := ioutil.ReadFile(loadFile)
 	if fileErr != nil {
 		log.Errorf("file error: %s", fileErr)
-		//os.Exit(1)
                 return
 	}
 	concurrentMap.Lock()
-	//move this above
-	//b, err := json.Marshal(concurrentMap.cookieMap)
 	err := json.Unmarshal(file, &concurrentMap.cookieMap)
 	concurrentMap.Unlock()
 	if err != nil {
 		log.Errorf("build error: %s", err)
 		os.Exit(1)
 	}
-	//if the read-back is successful, the backup file should be deleted.
-	//fmt.Printf("%+v", animals)
 }
 
-// Set and returns the cookie from the request
-func SetCookie(w http.ResponseWriter, r *http.Request) *http.Cookie {
-	checkCookie, cookieError := r.Cookie("uuid")
-	if cookieError == nil {
-		log.Infof("Cookie is already set: %s", checkCookie.Value)
-		return checkCookie
-	}
-	uuid, err := exec.Command("uuidgen").Output()
-	if err != nil {
-		log.Infof("Error something went wrong with uuidgen: %s", err)
-		os.Exit(1)
-	}
-	uuidLen := len(uuid) - 1
-	uuidString := string(uuid[:uuidLen])
-	log.Infof("Setting cookie with UUID: %s", uuidString)
-	cookie := &http.Cookie{Name: "uuid", Value: uuidString, Expires: time.Now().Add(356 * 24 * time.Hour), HttpOnly: true}
-	http.SetCookie(w, cookie)
-	return cookie
-}
-
+// If the request is not formed correctly, this will return a 400 error to the user
 func malformedRequest(w http.ResponseWriter, r *http.Request, missingInfo *Information) {
 	w.WriteHeader(400)
 	malformedPageTemplatesSlice := make([]string, len(templatesSlice))
@@ -103,6 +80,7 @@ func malformedRequest(w http.ResponseWriter, r *http.Request, missingInfo *Infor
 	return
 }
 
+// Returns the name of the user based on the cookie that is passed in
 func getPath(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	formCookie := r.FormValue("cookie")
@@ -119,7 +97,6 @@ func getPath(w http.ResponseWriter, r *http.Request) {
 	concurrentMap.RLock()
 	name := concurrentMap.cookieMap[formCookie]
 	concurrentMap.RUnlock()
-	//
 	getPageTemplatesSlice := make([]string, len(templatesSlice))
 	copy(getPageTemplatesSlice, templatesSlice)
 	getPageTemplatesSlice = append(getPageTemplatesSlice, fmt.Sprintf("%s/get.html", templatesFolder))
@@ -128,20 +105,17 @@ func getPath(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// Sets the name of the user based on the cookie and the name passed in
 func setPath(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	formCookie := r.FormValue("cookie")
 	formName := r.FormValue("name")
 	if len(formCookie) == 0 {
-	//if len(formCookie) == 0 || len(formName) == 0 {
 		missingCookie := ""
 		missingName := ""
 		if len(formCookie) == 0 {
 			missingCookie = "Cookie is missing"
 		}
-		//if len(formName) == 0 {
-		//	missingName = "Name is missing"
-		//}
 		info := &Information{
 			Name:   missingName,
 			Cookie: missingCookie,
@@ -152,9 +126,6 @@ func setPath(w http.ResponseWriter, r *http.Request) {
                 logout(formCookie)
                 return
         }
-	//printRequests(r)
-	//log.Info("Error, url not found: These are not the URLs you are looking for.")
-	//w.WriteHeader(404)
 	setPageTemplatesSlice := make([]string, len(templatesSlice))
 	copy(setPageTemplatesSlice, templatesSlice)
 	setPageTemplatesSlice = append(setPageTemplatesSlice, fmt.Sprintf("%s/set.html", templatesFolder))
@@ -166,9 +137,9 @@ func setPath(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// Returns an error 404 that the page is not found
 func errorer(w http.ResponseWriter, r *http.Request) {
-	//printRequests(r)
-	//log.Info("Error, url not found: These are not the URLs you are looking for.")
+	log.Infof("Error, url not found for authserver: %s", r.URL)
 	w.WriteHeader(404)
 	errorTemplatesSlice := make([]string, len(templatesSlice))
 	copy(errorTemplatesSlice, templatesSlice)
@@ -178,65 +149,45 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-//called go routine
-//https://gobyexample.com/goroutines
+// Backs up the server into json format
 func backupServer(backupInterval int) {
-//func backupServer(backupInterval int, loadingFile string) {
-	//func backupServer(done chan bool){
+  //TODO fix this?
 	for !done {
 		time.Sleep(time.Duration(backupInterval) * time.Second)
 	        if _, fileErr := os.Stat(loadingFile); fileErr == nil && !strings.Contains(loadingFile, ".bak") {
-                      //log.Info("got here")
 	              loadingFile = fmt.Sprintf("%s.bak", loadingFile)
-                      //log.Info("got here too")
                       deleteBackup(loadingFile)
 		      writeBackup(loadingFile)
 		      buildMap(loadingFile)
 		      deleteBackup(loadingFile)
                 }
-		//writeBackup(loadingFile)
-		//buildMap(loadingFile)
-		//deleteBackup(loadingFile)
 	}
 }
 
+// Cleans up the server and saves it before quitting, after the interrupt command
+// is recieved 
 func cleanup(){
-//func cleanup(sig chan os.Signal){
-  //<-sig
-  //log.Info("cleanup")
   writeBackup(backupFile)
   deleteBackup(loadingFile)
   log.Info("Cleanup Complete")
   fmt.Println("Cleanup Complete")
-  //os.Exit(0)
 }
 
-//func writeBackup() {
+// Writes the user information to the file passed in
+// to make sure in case of shutdown there is a copy
 func writeBackup(BackupFilename string) {
 	//TODO fix this
 	concurrentMap.RLock()
 	backup := make(map[string]string)
-	//backup := make(map[string]string, len(concurrentMap.cookieMap))
-	//copy(backup, concurrentMap.cookieMap)
 	for k, v := range concurrentMap.cookieMap {
 		backup[k] = v
 	}
-	//move this above
 	concurrentMap.RUnlock()
 	b, err := json.Marshal(backup)
 	if err != nil {
 		log.Errorf("error reading json: %s", err)
 		os.Exit(1)
 	}
-      //TODO fix this!
-	//if _, fileErr := os.Stat(loadingFile); fileErr == nil && !strings.Contains(loadingFile, ".bak") {
-        //      log.Info("got here")
-	//      loadingFile = fmt.Sprintf("%s.bak", loadingFile)
-        //      log.Info("got here too")
-        //      deleteBackup()
-	////} else {
-        ////  log.Info(fileErr)
-        //}
 	writeError := ioutil.WriteFile(BackupFilename, b, 0644)
 	if writeError != nil {
 		log.Errorf("error: %s", writeError)
@@ -245,24 +196,25 @@ func writeBackup(BackupFilename string) {
         log.Infof("Backup complete to: %s", BackupFilename)
 }
 
-//func deleteBackup() {
+// Deletes the copy of the backup file
 func deleteBackup(filename string) {
+  //TODO fix this 
   if strings.Contains(loadingFile, ".bak") {
         log.Infof("Deleting backup file: %s", filename)
 	os.Remove(filename)
   }
 }
 
+// Logs the user out of the server
 func logout(uuid string) {
-        //log.Infof("Here is the uuid: %s", uuid)
 	concurrentMap.Lock()
-	//concurrentMap.cookieMap[formCookie] = formName
 	delete(concurrentMap.cookieMap, uuid)
 	concurrentMap.Unlock()
         log.Infof("Logging user out: %s", uuid)
         return
 }
 
+// Main function of the authserver. Runs by default on port 9090
 func main() {
 	defer log.Flush()
 	port := flag.Int("port", 9090, "Set the server port, default port: 9090")
@@ -305,16 +257,12 @@ func main() {
 	buildMap(loadingFile)
 	done = false
 	go backupServer(*backupInterval)
-	//go backupServer(*backupInterval, loadingFile)
-	//go backupServer(done)
         signalChan := make(chan os.Signal, 1)
         signal.Notify(signalChan, os.Interrupt)
         go func() {
             for _ = range signalChan {
                 fmt.Println("\nReceived shutdown command. Cleaning up...\n")
-                //cleanup(services, c)
                 cleanup()
-                //cleanupDone <- true
                 os.Exit(1)
             }
         }()

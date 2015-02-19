@@ -286,13 +286,7 @@ func renderLogin(w http.ResponseWriter, r *http.Request) {
 // associated with the cookie
 func checkLogin(w http.ResponseWriter, r *http.Request) (bool, string) {
 	cookie := setCookie(w, r)
-	//cookie := CookieManagement.SetCookie(w, r)
-	//concurrentMap.RLock()
-	//name := concurrentMap.cookieMap[cookie.Value]
-	//concurrentMap.RUnlock()
-        //getName(cookie.Value)
         name := getName(cookie.Value, w, r)
-        //name := ""
 	if len(name) == 0 {
 		log.Info("There is no name stored for the UUID")
 		return false, ""
@@ -312,13 +306,6 @@ func loginPage(w http.ResponseWriter, r *http.Request) {
 	formName := r.FormValue("name")
 	if len(formName) > 0 {
 		cookie := setCookie(w, r)
-		//cookie := CookieManagement.SetCookie(w, r)
-                //
-                fmt.Println(cookie)
-                //
-		//concurrentMap.Lock()
-		//concurrentMap.cookieMap[cookie.Value] = formName
-		//concurrentMap.Unlock()
                 setName(cookie.Value, formName)
 		log.Debugf("Name passed in: %s", formName)
 		http.Redirect(w, r, "/", 302)
@@ -334,18 +321,10 @@ func loginPage(w http.ResponseWriter, r *http.Request) {
 func logoutPage(w http.ResponseWriter, r *http.Request) {
 	printRequests(r)
 	cookie := setCookie(w, r)
-	//cookie := CookieManagement.SetCookie(w, r)
-	//concurrentMap.Lock()
-	//name := concurrentMap.cookieMap[cookie.Value]
-	//delete(concurrentMap.cookieMap, cookie.Value)
-	//concurrentMap.Unlock()
         setName(cookie.Value, "")
-        //DELETE NAME SOMEHOW
         name := ""
 	log.Debugf("Deleting %s and %s from the server", cookie.Value, name)
         deleteCookie(w, r)
-	//deletingCookie := &http.Cookie{Name: "uuid", Value: "s", Expires: time.Unix(1, 0), HttpOnly: true}
-	//http.SetCookie(w, deletingCookie)
 	logoutTemplatesSlice := make([]string, len(templatesSlice))
 	copy(logoutTemplatesSlice, templatesSlice)
 	logoutTemplatesSlice = append(logoutTemplatesSlice, fmt.Sprintf("%s/logout.html", templatesFolder))
