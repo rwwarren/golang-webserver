@@ -9,12 +9,6 @@
 # The TEMPLATE flag takes the directory that
 # the templates are in
 # Lastly will take V for version
-    -authhost="http://localhost": This is the authserver default host
-      -authport=9090: This is the authserver default port
-        -authtimeout-ms=1000: This is the authserver timeout
-	  -avg-response-ms=1000: This is the timeserver avg response time
-	    -deviation-ms=10: This is the timeserver deviation
-	        -max-inflight=0: Max number of inflight requests
 
 GOROOT="/usr/apps/go/hg/"
 GOLOC="/usr/apps/go/hg/bin/go"
@@ -22,6 +16,12 @@ LOGFILE=""
 TEMPLATEFOLDER=""
 PORTNUM=""
 DEFAULTPORT="8080"
+AUTHHOST=""
+AUTHPORT=""
+AUTHTIMEOUT=""
+AVGRESP=""
+DEV=""
+MAXIN=""
 
 ifdef BREW
 	GOLOC=$(shell which go)
@@ -35,6 +35,24 @@ endif
 ifdef PORT
 	PORTNUM="--port $(PORT)"
 	DEFAULTPORT="$(PORT)"
+endif
+ifdef AHOST
+	AUTHHOST="--authhost $(AHOST)"
+endif
+ifdef APORT
+	AUTHPORT="--authport $(APORT)"
+endif
+ifdef ATIMEOUT
+	AUTHTIMEOUT="--authtimeout-ms $(ATIMEOUT)"
+endif
+ifdef RESP
+	AVGRESP="--avg-response-ms $(RESP)"
+endif
+ifdef DEVIATION
+	DEV="--deviation-ms $(DEVIATION)"
+endif
+ifdef INFLIGHT
+	MAXIN="--max-inflight $(INFLIGHT)"
 endif
 
 
@@ -69,6 +87,6 @@ ifdef V
 	./timeserver -V
 else
 	@echo ":"$(DEFAULTPORT)
-	- ./timeserver $(shell echo $(PORTNUM)) $(shell echo $(LOGFILE)) $(shell echo $(TEMPLATEFOLDER))
+	- ./timeserver $(shell echo $(PORTNUM)) $(shell echo $(LOGFILE)) $(shell echo $(TEMPLATEFOLDER)) $(shell echo $(AUTHHOST)) $(shell echo $(AUTHPORT)) $(shell echo $(AUTHTIMEOUT)) $(shell echo $(AVGRESP)) $(shell echo $(DEV)) $(shell echo $(MAXIN))
 endif
 

@@ -34,5 +34,11 @@
               for the one based on the project specs
     TEMPLATE  Set the template directory location
     V         Will display the server version and quit
+    AHOST     Authhost for the authserver
+    APORT     Authhost port for the authserver
+    ATIMEOUT  Auth server timeout (ms)
+    RESP      Average response time for the server
+    DEVIATION Deviation for the average response time
+    INFLIGHT  Max number of inflight concurrent requests
 
 
