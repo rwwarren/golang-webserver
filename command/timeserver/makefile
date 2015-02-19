@@ -9,11 +9,19 @@
 # The TEMPLATE flag takes the directory that
 # the templates are in
 # Lastly will take V for version
+    -authhost="http://localhost": This is the authserver default host
+      -authport=9090: This is the authserver default port
+        -authtimeout-ms=1000: This is the authserver timeout
+	  -avg-response-ms=1000: This is the timeserver avg response time
+	    -deviation-ms=10: This is the timeserver deviation
+	        -max-inflight=0: Max number of inflight requests
 
 GOROOT="/usr/apps/go/hg/"
 GOLOC="/usr/apps/go/hg/bin/go"
 LOGFILE=""
 TEMPLATEFOLDER=""
+PORTNUM=""
+DEFAULTPORT="8080"
 
 ifdef BREW
 	GOLOC=$(shell which go)
@@ -23,6 +31,10 @@ ifdef LOG
 endif
 ifdef TEMPLATE
 	TEMPLATEFOLDER="--templates $(TEMPLATE)"
+endif
+ifdef PORT
+	PORTNUM="--port $(PORT)"
+	DEFAULTPORT="$(PORT)"
 endif
 
 
@@ -56,12 +68,7 @@ run:
 ifdef V
 	./timeserver -V
 else
-  ifndef PORT
-	@echo ":8080"
-	- ./timeserver $(shell echo $(LOGFILE)) $(shell echo $(TEMPLATEFOLDER))
-  else
-	@echo ":"$(PORT)
-	- ./timeserver --port $(PORT) $(shell echo $(LOGFILE)) $(shell echo $(TEMPLATEFOLDER))
-  endif
+	@echo ":"$(DEFAULTPORT)
+	- ./timeserver $(shell echo $(PORTNUM)) $(shell echo $(LOGFILE)) $(shell echo $(TEMPLATEFOLDER))
 endif
 
