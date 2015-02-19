@@ -164,6 +164,12 @@ func getName(uuid string, w http.ResponseWriter, r *http.Request) string {
 	}
 	log.Infof("Response from the authserver: %s", resp)
 	defer resp.Body.Close()
+	status := resp.StatusCode
+        if status != 200 {
+          log.Critical("Something is likely wrong with the authserver")
+          log.Criticalf("Error getting 200 Status Code from authServer: %v", status)
+          return ""
+        }
 	body, err := ioutil.ReadAll(resp.Body)
 	respBody := string(body)
 	firstBody := strings.Split(respBody, "<body>")
@@ -183,8 +189,13 @@ func setName(uuid string, name string) {
 		log.Criticalf("Error getting authserver: %s", err)
 		os.Exit(1)
 	}
+	status := resp.StatusCode
+        if status != 200 {
+          log.Critical("Something is likely wrong with the authserver")
+          log.Criticalf("Error getting 200 Status Code from authServer: %v", status)
+          return
+        }
 	log.Info("Response: %s", resp)
-
 }
 
 // Handles the timeserver which shows the current time
