@@ -18,9 +18,7 @@
 package main
 
 import (
-	//"../../cookieManagement/"
 	log "../../seelog-master/"
-	//log "../seelog-master/"
 	"flag"
 	"fmt"
 	"html/template"
@@ -30,20 +28,9 @@ import (
 	"sync"
 	"time"
         "math/rand"
-        //"net"
-        //"io/ioutil"
         "io/ioutil"
         "strings"
-        //"os/signal"
-        //"syscall"
-        //"reflect"
 )
-
-//// Stores the cookie information
-//var concurrentMap struct {
-//	sync.RWMutex
-//	cookieMap map[string]string
-//}
 
 type PageInformation struct {
 	Name        string
@@ -58,22 +45,27 @@ var maxInbound int
 var authTimeout int
 var avgResponse int
 var deviation int
+var logFile string
+var version bool
+var port int
+var templatesFlag string
 var inboundRequests struct {
 	sync.RWMutex
 	currentRequests int
 }
 
-// Intitalizes the concurrentMap
+// Intitalizes the timeserver with authserver information
 func init() {
-	log.Debug("Logger not initialized yet")
-	//concurrentMap = struct {
-	//	sync.RWMutex
-	//	cookieMap map[string]string
-	//}{cookieMap: make(map[string]string)}
-	//log.Debug("Initalizing the map")
 	authPort := flag.Int("authport", 9090, "This is the authserver default port")
 	authHost := flag.String("authhost", "http://localhost", "This is the authserver default host")
 	inflight := flag.Int("max-inflight", 0, "Max number of inflight requests")
+	port = *flag.Int("port", 8080, "Set the server port, default port: 8080")
+	version = *flag.Bool("V", false, "Shows the version of the timeserver")
+	logFile = *flag.String("log", "logConfig", "This is the logger configuration file")
+	templatesFlag = *flag.String("templates", "templates", "This is the templates folder name")
+	authTimeout = *flag.Int("authtimeout-ms", 1000, "This is the authserver timeout")
+	avgResponse = *flag.Int("avg-response-ms", 1000, "This is the timeserver avg response time")
+	deviation = *flag.Int("deviation-ms", 10, "This is the timeserver deviation")
         flag.Parse()
         server = fmt.Sprintf("%s:%d", *authHost, *authPort)
         inboundRequests = struct {
@@ -83,6 +75,7 @@ func init() {
         maxInbound = *inflight
 }
 
+// Decreases the amount of current inbound requests on the server
 func removeInboundRequest(){
   inboundRequests.Lock()
   inboundRequests.currentRequests--
@@ -91,6 +84,7 @@ func removeInboundRequest(){
   log.Infof("Current inbound requests: %d", currentRequests)
 }
 
+// Increases the amount of current inbound requests on the server
 func addInboundRequest(){
   inboundRequests.Lock()
   inboundRequests.currentRequests++
@@ -99,6 +93,7 @@ func addInboundRequest(){
   log.Infof("Current inbound requests: %d", currentRequests)
 }
 
+// Returns true if you can have more inbound requests
 func canHaveMoreInboundRequests() bool {
   inboundRequests.RLock()
   currentInflight := inboundRequests.currentRequests
@@ -106,8 +101,8 @@ func canHaveMoreInboundRequests() bool {
   return (maxInbound == 0 || currentInflight < maxInbound)
 }
 
+// Error page for there being too many inbound requests on the server
 func maxInboundError(w http.ResponseWriter, r *http.Request){
-  //max inbound error
 	printRequests(r)
 	log.Info("Error, too many inbound requests")
 	w.WriteHeader(503)
@@ -120,10 +115,12 @@ func maxInboundError(w http.ResponseWriter, r *http.Request){
 	return
 }
 
+// Deletes the cookie associated with a resopnse and sets a new one
 func deleteCookie(w http.ResponseWriter, r *http.Request){
 	deletingCookie := &http.Cookie{Name: "uuid", Value: "s", Expires: time.Unix(1, 0), HttpOnly: true}
 	http.SetCookie(w, deletingCookie)
 }
+
 // Set and returns the cookie from the request
 func setCookie(w http.ResponseWriter, r *http.Request) *http.Cookie {
 	checkCookie, cookieError := r.Cookie("uuid")
@@ -144,6 +141,7 @@ func setCookie(w http.ResponseWriter, r *http.Request) *http.Cookie {
 	return cookie
 }
 
+// Gets the username associated with the cookie
 func getName(uuid string, w http.ResponseWriter, r *http.Request) string {
   getUrl := fmt.Sprintf("%s/get?cookie=%s", server, uuid)
   timeout := time.Duration(time.Duration(authTimeout) * time.Millisecond)
@@ -151,13 +149,12 @@ func getName(uuid string, w http.ResponseWriter, r *http.Request) string {
         Timeout: timeout,
   }
   resp, err := client.Get(getUrl)
-  //resp, err := http.Get(getUrl)
   if err != nil {
     log.Criticalf("Error getting authserver: %s" , err)
     deleteCookie(w, r)
-    //os.Exit(1)
+    return ""
   }
-  log.Info(resp)
+  log.Infof("Response from the authserver: %s", resp)
   defer resp.Body.Close()
   body, err := ioutil.ReadAll(resp.Body)
   respBody := string(body)
@@ -166,12 +163,10 @@ func getName(uuid string, w http.ResponseWriter, r *http.Request) string {
   secondBody := strings.Split(firstBodyHalf, "</body>")
   secondBodyHalf := secondBody[0]
   finalBody := strings.Trim(secondBodyHalf, "\n ")
-  //log.Infof("this is the body: %s", respBody)
-  //log.Infof("this is the body: %s", finalBody)
   return finalBody
-  //return uuid
 }
 
+// Sends the name associated with the cookie to the authserver
 func setName(uuid string, name string){
   log.Infof("setting name with uuid: %s and name: ", uuid, name)
   setUrl := fmt.Sprintf("%s/set?cookie=%s&name=%s", server, uuid, name)
@@ -187,8 +182,6 @@ func setName(uuid string, name string){
 // Handles the timeserver which shows the current time
 // for the local timezone
 func timeHandler(w http.ResponseWriter, r *http.Request) {
-        //sample := rand.NormFloat64() * deviation + avgResponse
-        //dev := int64(deviation)
         waitTime := rand.NormFloat64() * float64(deviation) + float64(avgResponse)
         if waitTime < 0 {
           waitTime *= -1
@@ -204,22 +197,11 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 	const layout = "3:04:05 PM"
 	const UTClayout = "15:04:05 MST"
 	personalString := ""
-	cookie := setCookie(w, r)
-	//cookie := CookieManagement.SetCookie(w, r)
-                //
-                fmt.Println(cookie)
-                //
-	//concurrentMap.RLock()
-        name := getName(cookie.Value, w, r)
-        //name := ""
-	if len(name) > 0 {
-	//if len(concurrentMap.cookieMap[cookie.Value]) > 0 {
-                //getName(cookie.Value)
-		//name := concurrentMap.cookieMap[cookie.Value]
+        isLoggedIn, name := checkLogin(w, r)
+        if isLoggedIn {
 		personalString = fmt.Sprintf(", %s", name)
 		log.Debugf("User is logged in as: %s", name)
 	}
-	//concurrentMap.RUnlock()
 	timeTemplatesSlice := make([]string, len(templatesSlice))
 	copy(timeTemplatesSlice, templatesSlice)
 	timeTemplatesSlice = append(timeTemplatesSlice, fmt.Sprintf("%s/time.html", templatesFolder))
@@ -375,7 +357,6 @@ func logoutPage(w http.ResponseWriter, r *http.Request) {
 func printRequests(r *http.Request) {
 	urlPath := r.URL.Path
 	log.Infof("Request url path: %s", urlPath)
-        //likely have something about rand sleeping
 }
 
 // Sets up the templates slice
@@ -388,20 +369,9 @@ func templateSetup() {
 // Main handler that runs the server on the port or shows the version of the server
 func main() {
 	defer log.Flush()
-	port := flag.Int("port", 8080, "Set the server port, default port: 8080")
-	version := flag.Bool("V", false, "Shows the version of the timeserver")
-	logFile := flag.String("log", "logConfig", "This is the logger configuration file")
-	templatesFlag := flag.String("templates", "templates", "This is the templates folder name")
-	//authPort := flag.Int("authport", 9090, "This is the authserver default port")
-	//authHost := flag.String("authhost", "localhost", "This is the authserver default host")
-	authTimeout = *flag.Int("authtimeout-ms", 1000, "This is the authserver timeout")
-	avgResponse = *flag.Int("avg-response-ms", 1000, "This is the timeserver avg response time")
-	deviation = *flag.Int("deviation-ms", 10, "This is the timeserver deviation")
-	//maxInflight := flag.Int("max-inflight", 0, "This is the timeserver max inflight connections (0 is unlimited)")
-	//flag.Parse()
-	templatesFolder = *templatesFlag
+	templatesFolder = templatesFlag
 	templateSetup()
-	logFileName := fmt.Sprintf("etc/%s.xml", *logFile)
+	logFileName := fmt.Sprintf("etc/%s.xml", logFile)
 	logger, logError := log.LoggerFromConfigAsFile(logFileName)
 	if logError != nil {
 		fmt.Printf("Log instantiation error: %s", logError)
@@ -414,71 +384,23 @@ func main() {
 	log.Warn("Testing warn")
 	log.Error("Testing error")
 	log.Critical("Testing critical")
-	log.Infof("Port flag is set as: %d", *port)
-	log.Infof("Version flag is set? %v", *version)
-	log.Infof("Log config file flag is set as: %s", *logFile)
-	log.Infof("Templates folder flag is set as: %s", *templatesFlag)
+	log.Infof("Port flag is set as: %d", port)
+	log.Infof("Version flag is set? %v", version)
+	log.Infof("Log config file flag is set as: %s", logFile)
+	log.Infof("Templates folder flag is set as: %s", templatesFlag)
 	log.Info("Server has started up!")
-	if *version {
+	if version {
 		log.Info("Printing out the version")
 		fmt.Println("Assignment Version: 3")
 		return
 	}
-        //
-        //c := make(chan os.Signal, 1)
-        //signal.Notify(c, os.Interrupt)
-        //signal.Notify(c, syscall.SIGTERM)
-        //c := make(chan os.Signal, 2)
-        //signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-        //go func() {
-        //  //for sig := range c {
-        //    //log.Infof("Here: %v %v", c, sig)
-        //    //pprof.StopCPUProfile()
-        //    sig := <-c
-        //    switch sig {
-        //    case os.Interrupt:
-        //        //handle SIGINT
-        //        cleanup()
-        //    case syscall.SIGTERM:
-        //        //handle SIGTERM
-        //        cleanup()
-        //        log.Info("get here!!")
-        //        //os.Exit(1)
-        //    }
-        //    cleanup()
-        //    os.Exit(1)
-        //  //}
-        //}()
-        //signalChan := make(chan os.Signal, 1)
-        //cleanupDone := make(chan bool)
-        //signal.Notify(signalChan, os.Interrupt)
-        //go func() {
-        //    for _ = range signalChan {
-        //        fmt.Println("\nReceived an interrupt, stopping services...\n")
-        //        //cleanup(services, c)
-        //        cleanup()
-        //        cleanupDone <- true
-        //        os.Exit(1)
-        //    }
-        //}()
-        //<-cleanupDone
-        //
-//        c := make(chan os.Signal, 1)
-//        signal.Notify(c, os.Interrupt)
-//        signal.Notify(c, syscall.SIGTERM)
-//        go func() {
-//            <-c
-//            cleanup()
-//            os.Exit(1)
-//        }() 
-        //
 	http.HandleFunc("/time", timeHandler)
 	http.HandleFunc("/index.html", indexPage)
 	http.HandleFunc("/login", loginPage)
 	http.HandleFunc("/logout", logoutPage)
 	http.HandleFunc("/", errorer)
 	http.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir("css"))))
-	var portString = fmt.Sprintf(":%d", *port)
+	var portString = fmt.Sprintf(":%d", port)
 	err := http.ListenAndServe(portString, nil)
 	if err != nil {
 		log.Errorf("Server Failed: %s", err)
