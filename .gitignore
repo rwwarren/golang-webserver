@@ -4,6 +4,7 @@
 *.log
 command/timeserver/timeserver
 command/authserver/authserver
+command/loadgen/loadgen
 test/*
 *.tar.gz
 *.tar
