@@ -6,22 +6,19 @@
 # Another thing is LOG and config filename
 # for the logfile name (which appends .xml)
 # also prepends "etc/" for the file location
-# The TEMPLATE flag takes the directory that
-# the templates are in
-# Lastly will take V for version
+# The DUMPFILE flag takes the file that
+# to backup to
+# Lastly will take CHECKINT flag is the checkpoint
+# interval for backups
+#TODO get this for the loadgen
 
 GOROOT="/usr/apps/go/hg/"
 GOLOC="/usr/apps/go/hg/bin/go"
 LOGFILE=""
-TEMPLATEFOLDER=""
+DUMPFILENAME=""
 PORTNUM=""
-DEFAULTPORT="8080"
-AUTHHOST=""
-AUTHPORT=""
-AUTHTIMEOUT=""
-AVGRESP=""
-DEV=""
-MAXIN=""
+DEFAULTPORT="9090"
+CHECKPOINT=""
 GOTYPE := $(shell { command -v $(GOLOC) ; } 2>/dev/null)
 ifneq ("$(GOTYPE)", $(GOLOC))
 	GOLOC="go"
@@ -33,32 +30,16 @@ endif
 ifdef LOG
 	LOGFILE="--log $(LOG)"
 endif
-ifdef TEMPLATE
-	TEMPLATEFOLDER="--templates $(TEMPLATE)"
+ifdef DUMPFILE
+	DUMPFILENAME="--dumpfile $(DUMPFILE)"
 endif
 ifdef PORT
 	PORTNUM="--port $(PORT)"
 	DEFAULTPORT="$(PORT)"
 endif
-ifdef AHOST
-	AUTHHOST="--authhost $(AHOST)"
+ifdef CHECKINT
+	CHECKPOINT="--checkpoint-interval $(CHECKINT)"
 endif
-ifdef APORT
-	AUTHPORT="--authport $(APORT)"
-endif
-ifdef ATIMEOUT
-	AUTHTIMEOUT="--authtimeout-ms $(ATIMEOUT)"
-endif
-ifdef RESP
-	AVGRESP="--avg-response-ms $(RESP)"
-endif
-ifdef DEVIATION
-	DEV="--deviation-ms $(DEVIATION)"
-endif
-ifdef INFLIGHT
-	MAXIN="--max-inflight $(INFLIGHT)"
-endif
-
 
 all: print install run
 
@@ -87,10 +68,6 @@ install:
 run:
 	@echo -n "Server location: "
 	- @ifconfig | grep -A 2 "eth0" | grep "inet addr" | cut -d: -f2 | awk '{ printf $$1}'
-ifdef V
-	./timeserver -V
-else
 	@echo ":"$(DEFAULTPORT)
-	- ./timeserver $(shell echo $(PORTNUM)) $(shell echo $(LOGFILE)) $(shell echo $(TEMPLATEFOLDER)) $(shell echo $(AUTHHOST)) $(shell echo $(AUTHPORT)) $(shell echo $(AUTHTIMEOUT)) $(shell echo $(AVGRESP)) $(shell echo $(DEV)) $(shell echo $(MAXIN))
-endif
+	- ./loadgen $(shell echo $(PORTNUM)) $(shell echo $(LOGFILE)) $(shell echo $(TEMPLATEFOLDER))
 

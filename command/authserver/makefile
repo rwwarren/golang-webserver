@@ -19,6 +19,10 @@ DUMPFILENAME=""
 PORTNUM=""
 DEFAULTPORT="9090"
 CHECKPOINT=""
+GOTYPE := $(shell { command -v $(GOLOC) ; } 2>/dev/null)
+ifneq ("$(GOTYPE)", $(GOLOC))
+	GOLOC="go"
+endif
 
 ifdef BREW
 	GOLOC=$(shell which go)
