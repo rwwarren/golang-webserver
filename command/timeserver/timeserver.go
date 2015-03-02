@@ -113,7 +113,7 @@ func canHaveMoreInboundRequests() bool {
 	inboundRequests.RLock()
 	currentInflight := inboundRequests.currentRequests
 	inboundRequests.RUnlock()
-	return (maxInbound == 0 || currentInflight < maxInbound)
+	return (maxInbound == 0 || currentInflight <= maxInbound)
 }
 
 // Error page for there being too many inbound requests on the server
@@ -404,7 +404,7 @@ func main() {
 		}
 		gitVersion := fmt.Sprintf("%v", out.String())
 		fmt.Printf("Version according to git: %v", gitVersion)
-		fmt.Println("Assignment Version: 4")
+		fmt.Println("Assignment Version: 5")
 		os.Exit(0)
 		return
 	}

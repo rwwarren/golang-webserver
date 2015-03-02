@@ -17,26 +17,108 @@ package main
 import (
 	log "../../seelog-master/"
 	"flag"
-        "sync"
-        "fmt"
+	"fmt"
+	"net/http"
+	"sort"
+	"sync"
+	"time"
 )
-
 
 // Stores the cookie information
 var concurrentMap struct {
 	sync.RWMutex
-	cookieMap map[string]string
+	cookieMap map[string]int
 }
 
 // Initalizes the loadgen with the important user storage things
 func init() {
 	concurrentMap = struct {
 		sync.RWMutex
-		cookieMap map[string]string
-	}{cookieMap: make(map[string]string)}
+		cookieMap map[string]int
+	}{cookieMap: make(map[string]int)}
+	concurrentMap.Lock()
+	concurrentMap.cookieMap["Total"] = 0
+	concurrentMap.cookieMap["100s"] = 0
+	concurrentMap.cookieMap["200s"] = 0
+	concurrentMap.cookieMap["300s"] = 0
+	concurrentMap.cookieMap["400s"] = 0
+	concurrentMap.cookieMap["500s"] = 0
+	concurrentMap.cookieMap["Errors"] = 0
+	concurrentMap.Unlock()
 }
 
-func runsomehitng(){
+// Gets the status code range from the statusCode
+func getStatusCentury(statusCode int) string {
+	keyCode := (statusCode / 100) * 100
+	return fmt.Sprintf("%vs", keyCode)
+}
+
+func getUrl(testUrl string, timeout int) {
+	getUrl := fmt.Sprintf("%s", testUrl)
+	timeoutms := time.Duration(time.Duration(timeout) * time.Millisecond)
+	client := http.Client{
+		Timeout: timeoutms,
+	}
+	resp, err := client.Get(getUrl)
+	if err != nil {
+		log.Criticalf("Error getting authserver: %s", err)
+		//this is a timout / error
+		//return ""
+		concurrentMap.Lock()
+		currentCount := concurrentMap.cookieMap["Errors"]
+		currentCount++
+		concurrentMap.cookieMap["Errors"] = currentCount
+		totalCount := concurrentMap.cookieMap["total"]
+		totalCount++
+		concurrentMap.cookieMap["total"] = totalCount
+		concurrentMap.Unlock()
+	} else {
+		log.Infof("Response from the authserver: %s", resp)
+		defer resp.Body.Close()
+		status := resp.StatusCode
+		mapStatus := fmt.Sprintf("%v", getStatusCentury(status))
+		concurrentMap.Lock()
+		currentCount := concurrentMap.cookieMap[mapStatus]
+		currentCount++
+		concurrentMap.cookieMap[mapStatus] = currentCount
+		totalCount := concurrentMap.cookieMap["Total"]
+		totalCount++
+		concurrentMap.cookieMap["Total"] = totalCount
+		concurrentMap.Unlock()
+	}
+}
+
+func printMap(runtime int) {
+	time.Sleep(time.Duration(runtime) * time.Second)
+	concurrentMap.RLock()
+	//TODO print the map
+
+	keys := []string{}
+	for k, _ := range concurrentMap.cookieMap {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	//sort.Ints(keys)
+	for _, k := range keys {
+		log.Infof("%v: %v", k, concurrentMap.cookieMap[k])
+		fmt.Printf("%v: %v \n", k, concurrentMap.cookieMap[k])
+	}
+
+	//for key, val := range concurrentMap.cookieMap {
+	//    log.Debugf("%v: %v", key, val)
+	//    fmt.Printf("%v: %v\n", key, val)
+	//  }
+	concurrentMap.RUnlock()
+}
+
+func load(testUrl string, reqRate int, burstRate int, timeout int) {
+	//for {
+	//  //
+	//}
+
+	for i := 0; i < reqRate; i++ {
+		go getUrl(testUrl, timeout)
+	}
 
 }
 
@@ -63,14 +145,21 @@ func main() {
 	log.Warn("Testing warn")
 	log.Error("Testing error")
 	log.Critical("Testing critical")
-        testUrl := *testServerUrl
-        reqRate := *requestRate
-        burstRate := *burstRequest
-        timeout := *timeoutTime
-        runtime := *totalRuntime
-        log.Infof("url Flag: %s", testUrl)
-        log.Infof("rate Flag: %v", reqRate)
-        log.Infof("burst Flag: %v", burstRate)
-        log.Infof("timeout-ms Flag: %v", timeout)
-        log.Infof("runtime Flag: %v", runtime)
+	testUrl := *testServerUrl
+	reqRate := *requestRate
+	burstRate := *burstRequest
+	timeout := *timeoutTime
+	runtime := *totalRuntime
+	log.Infof("url Flag: %s", testUrl)
+	log.Infof("rate Flag: %v", reqRate)
+	log.Infof("burst Flag: %v", burstRate)
+	log.Infof("timeout-ms Flag: %v", timeout)
+	log.Infof("runtime Flag: %v", runtime)
+	//
+	go load(testUrl, reqRate, burstRate, timeout)
+	//getUrl(testUrl, timeout)
+	//go printMap(runtime)
+	time.Sleep(time.Duration(runtime) * time.Second)
+	//time.Sleep(time.Duration(2 * runtime) * time.Second)
+	printMap(runtime)
 }
