@@ -16,34 +16,34 @@ package main
 
 import (
 	log "../../seelog-master/"
-        "../counter"
+	"../counter"
 	"flag"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
-        "os"
 )
 
 // Counter
 var c = counter.New()
 
 // Keys for tracking
-var keys = []string {
-  "100s",
-  "200s",
-  "300s",
-  "400s",
-  "500s",
-  "Errors",
-  "Total",
-  }
+var keys = []string{
+	"100s",
+	"200s",
+	"300s",
+	"400s",
+	"500s",
+	"Errors",
+	"Total",
+}
 
 // Gets the status code range from the statusCode
 func getStatusCentury(statusCode int) string {
 	keyCode := (statusCode / 100) * 100
-        if keyCode > 500 || keyCode < 100 {
-          return fmt.Sprint("Errors")
-        }
+	if keyCode > 500 || keyCode < 100 {
+		return fmt.Sprint("Errors")
+	}
 	return fmt.Sprintf("%vs", keyCode)
 }
 
@@ -57,37 +57,37 @@ func printMap(runtime int) {
 
 // Sends request to server and tracks status code
 func request(timeout int, testUrl string) {
-        c.Incr("Total", 1)
-        client := http.Client{
-                Timeout: (time.Duration(timeout) * time.Millisecond),
-        }
-        response, err := client.Get(testUrl)
-        if err != nil {
-                c.Incr("Errors", 1)
-                return
-        }
-                key := fmt.Sprintf("%v", getStatusCentury(response.StatusCode))
-        c.Incr(key, 1)
+	c.Incr("Total", 1)
+	client := http.Client{
+		Timeout: (time.Duration(timeout) * time.Millisecond),
+	}
+	response, err := client.Get(testUrl)
+	if err != nil {
+		c.Incr("Errors", 1)
+		return
+	}
+	key := fmt.Sprintf("%v", getStatusCentury(response.StatusCode))
+	c.Incr(key, 1)
 }
 
 // Creates all the bursts and fires off requests
 func load(testUrl string, reqRate int, burstRate int, timeout int, runtime int) {
-        timeoutTick := time.Tick(time.Duration(runtime) * time.Second)
-        interval := time.Duration((1000000*burstRate)/reqRate) * time.Microsecond
-        period := time.Tick(interval)
-        for {
-                // fire off burst
-                for i := 0; i < burstRate; i++ {
-                        go request(timeout, testUrl)
-                }
-                // wait for next tick
-                <-period
-                select {
-                case <-timeoutTick:
-                        return
-                default:
-                }
-        }
+	timeoutTick := time.Tick(time.Duration(runtime) * time.Second)
+	interval := time.Duration((1000000*burstRate)/reqRate) * time.Microsecond
+	period := time.Tick(interval)
+	for {
+		// fire off burst
+		for i := 0; i < burstRate; i++ {
+			go request(timeout, testUrl)
+		}
+		// wait for next tick
+		<-period
+		select {
+		case <-timeoutTick:
+			return
+		default:
+		}
+	}
 }
 
 // Main function of the loadgen
@@ -124,9 +124,9 @@ func main() {
 	log.Infof("timeout-ms Flag: %v", timeout)
 	log.Infof("runtime Flag: %v", runtime)
 	load(testUrl, reqRate, burstRate, timeout, runtime)
-        //Added a second to let a little extra collection happen
-	time.Sleep(time.Duration(runtime + 1) * time.Second)
-        fmt.Println()
+	//Added a second to let a little extra collection happen
+	time.Sleep(time.Duration(runtime+1) * time.Second)
+	fmt.Println()
 	printMap(runtime)
-        os.Exit(0)
+	os.Exit(0)
 }
