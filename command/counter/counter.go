@@ -1,4 +1,8 @@
-// counter.go
+// Counter implementation
+// Keeps track of all the
+// counting imformation for
+// the loadgen requests
+
 package counter
 
 const (
@@ -6,18 +10,20 @@ const (
 	kindGet
 )
 
+// Stores the request information
 type request struct {
 	// response channel for Get requests
 	resp chan int
 	// flag to determine which operation is requested: increment
 	// or get
 	requestKind int
-	// variable name
+	// key for the request
 	key string
 	// amount to increment (or decrement if negative)
 	delta int
 }
 
+// Counter stores the request channel
 type Counter struct {
 	req chan request
 }
@@ -25,7 +31,6 @@ type Counter struct {
 // New creates a Counter object AND a counter thread
 // A counter is a map between name and value, where each value can be
 // incremented atomically.
-//
 // There is also an unimplemented Dump function to return a copy of
 // the dictionary (for exporting to another service..
 func New() *Counter {
