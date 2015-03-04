@@ -1,0 +1,21 @@
+** First test with just 1 second runtime and timeserver default with no max inflight **
+[[33mDEBUG[39m] 2015-03-03 18:24:20: Logger intitalized
+[[33mTRACE[39m] 2015-03-03 18:24:20: Testing trace
+[[33mDEBUG[39m] 2015-03-03 18:24:20: Testing debug
+[[32mINFO[39m] 2015-03-03 18:24:20: Testing info
+[[36mWARN[39m] 2015-03-03 18:24:20: Testing warn
+[[31mERROR[39m] 2015-03-03 18:24:20: Testing error
+[[31mCRITICAL[39m] 2015-03-03 18:24:20: Testing critical
+[[32mINFO[39m] 2015-03-03 18:24:20: url Flag: http://localhost:8080/time
+[[32mINFO[39m] 2015-03-03 18:24:20: rate Flag: 200
+[[32mINFO[39m] 2015-03-03 18:24:20: burst Flag: 20
+[[32mINFO[39m] 2015-03-03 18:24:20: timeout-ms Flag: 1500
+[[32mINFO[39m] 2015-03-03 18:24:20: runtime Flag: 1
+
+100s: 0 
+200s: 200 
+300s: 0 
+400s: 0 
+500s: 0 
+Errors: 0 
+Total: 200 

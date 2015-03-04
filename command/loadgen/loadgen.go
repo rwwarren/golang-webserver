@@ -97,7 +97,7 @@ func main() {
 	testServerUrl := flag.String("url", "http://localhost:8080/time", "This is the test server url")
 	requestRate := flag.Int("rate", 200, "This is the request rate")
 	burstRequest := flag.Int("burst", 20, "Number of concurrent requests to issue")
-	timeoutTime := flag.Int("timeout-ms", 1000, "Max time to wait for response")
+	timeoutTime := flag.Int("timeout-ms", 1500, "Max time to wait for response")
 	totalRuntime := flag.Int("runtime", 10, "Number of seconds to process")
 	flag.Parse()
 	logFileName := fmt.Sprintf("etc/%s.xml", *logFile)

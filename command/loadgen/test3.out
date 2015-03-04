@@ -1,0 +1,21 @@
+** Third test with loadgen longer allowed timeout and timeserver with 5 max inflight but longer avg response time**
+[[33mDEBUG[39m] 2015-03-03 18:29:34: Logger intitalized
+[[33mTRACE[39m] 2015-03-03 18:29:34: Testing trace
+[[33mDEBUG[39m] 2015-03-03 18:29:34: Testing debug
+[[32mINFO[39m] 2015-03-03 18:29:34: Testing info
+[[36mWARN[39m] 2015-03-03 18:29:34: Testing warn
+[[31mERROR[39m] 2015-03-03 18:29:34: Testing error
+[[31mCRITICAL[39m] 2015-03-03 18:29:34: Testing critical
+[[32mINFO[39m] 2015-03-03 18:29:34: url Flag: http://localhost:8080/time
+[[32mINFO[39m] 2015-03-03 18:29:34: rate Flag: 200
+[[32mINFO[39m] 2015-03-03 18:29:34: burst Flag: 20
+[[32mINFO[39m] 2015-03-03 18:29:34: timeout-ms Flag: 1500
+[[32mINFO[39m] 2015-03-03 18:29:34: runtime Flag: 10
+
+100s: 0 
+200s: 3 
+300s: 0 
+400s: 0 
+500s: 3 
+Errors: 1994 
+Total: 2000 
