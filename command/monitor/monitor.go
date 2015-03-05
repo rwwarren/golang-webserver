@@ -1,16 +1,12 @@
 // (C) Ryan Warren 2015
 // Monitor
 //
-// Authserver. This tracks all the user logged in information
-// it stores infomation about the user to make sure that another
-// server can see if the user is logged in or not
+// Monitor it
 //
 // There are a couple flags for this program:
-//--rate: average rate of requests (per second)
-//--burst: number of concurrent requests to issue
-//--timeout-ms: max time to wait for response
-//--runtime: number of seconds to process
-//--url: URL to sample
+//--
+//--
+//--
 
 package main
 
@@ -18,7 +14,6 @@ import (
 	log "../../seelog-master/"
         "flag"
         "fmt"
-        "os"
 )
 
 // Main function of the loadgen
@@ -48,6 +43,5 @@ func main() {
 	log.Infof("target list Flag: %s", targets)
 	log.Infof("sample-interval-sec Flag: %v", sampleSec)
 	log.Infof("runtime Flag: %v", monitorRuntime)
-        fmt.Println("asdf")
-	os.Exit(0)
+        //TODO make the targets: split it on the commas
 }
