@@ -15,6 +15,7 @@ package main
 
 import (
 	log "../../seelog-master/"
+	"../counter"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -40,6 +41,9 @@ var concurrentMap struct {
 	sync.RWMutex
 	cookieMap map[string]string
 }
+
+// Counter
+var c = counter.New()
 
 // Initalizes the authserver with the important user storage things
 func init() {
@@ -83,6 +87,8 @@ func malformedRequest(w http.ResponseWriter, r *http.Request, missingInfo *Infor
 	malformedPageTemplatesSlice = append(malformedPageTemplatesSlice, fmt.Sprintf("%s/malformed.html", templatesFolder))
 	var malformedPage = template.Must(template.New("MalformedPage").ParseFiles(malformedPageTemplatesSlice...))
 	malformedPage.ExecuteTemplate(w, "template", missingInfo)
+	c.Incr("Total", 1)
+	c.Incr("400", 1)
 	return
 }
 
@@ -108,6 +114,12 @@ func getPath(w http.ResponseWriter, r *http.Request) {
 	getPageTemplatesSlice = append(getPageTemplatesSlice, fmt.Sprintf("%s/get.html", templatesFolder))
 	var getPage = template.Must(template.New("GetPage").ParseFiles(getPageTemplatesSlice...))
 	getPage.ExecuteTemplate(w, "template", name)
+	c.Incr("Total", 1)
+	c.Incr("200", 1)
+	c.Incr("get-cookie", 1)
+	if len(name) == 0 {
+		c.Incr("no-cookie", 1)
+	}
 	return
 }
 
@@ -140,6 +152,9 @@ func setPath(w http.ResponseWriter, r *http.Request) {
 	concurrentMap.Lock()
 	concurrentMap.cookieMap[formCookie] = formName
 	concurrentMap.Unlock()
+	c.Incr("Total", 1)
+	c.Incr("200", 1)
+	c.Incr("set-cookie", 1)
 	return
 }
 
@@ -152,6 +167,8 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 	errorTemplatesSlice = append(errorTemplatesSlice, fmt.Sprintf("%s/404.html", templatesFolder))
 	var errorPage = template.Must(template.New("ErrorPage").ParseFiles(errorTemplatesSlice...))
 	errorPage.ExecuteTemplate(w, "template", "")
+	c.Incr("Total", 1)
+	c.Incr("404", 1)
 	return
 }
 
@@ -220,6 +237,21 @@ func logout(uuid string) {
 	return
 }
 
+// monitor path uri
+func monitor(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	profile := fmt.Sprintf(`{"set-cookie":"%v",
+                "get-cookie": "%v",
+                "no-cookie": "%v",
+                "200": "%v",
+                "400": "%v",
+                "404": "%v",
+                "Total": "%v"}`,
+		c.Get("set-cookie"), c.Get("get-cookie"), c.Get("no-cookie"),
+		c.Get("200"), c.Get("400"), c.Get("404"), c.Get("Total"))
+	fmt.Fprintf(w, profile)
+}
+
 // Main function of the authserver. Runs by default on port 9090
 func main() {
 	defer log.Flush()
@@ -274,6 +306,7 @@ func main() {
 	}()
 	http.HandleFunc("/get", getPath)
 	http.HandleFunc("/set", setPath)
+	http.HandleFunc("/monitor", monitor)
 	http.HandleFunc("/", errorer)
 	err := http.ListenAndServe(portString, nil)
 	if err != nil {

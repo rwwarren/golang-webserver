@@ -26,6 +26,7 @@ package main
 
 import (
 	log "../../seelog-master/"
+	"../counter"
 	"bytes"
 	"flag"
 	"fmt"
@@ -61,6 +62,9 @@ var inboundRequests struct {
 	sync.RWMutex
 	currentRequests int
 }
+
+// Counter
+var c = counter.New()
 
 // Intitalizes the timeserver with authserver information
 func init() {
@@ -119,6 +123,8 @@ func canHaveMoreInboundRequests() bool {
 // Error page for there being too many inbound requests on the server
 func maxInboundError(w http.ResponseWriter, r *http.Request) {
 	printRequests(r)
+	c.Incr("Total", 1)
+	c.Incr("503", 1)
 	log.Info("Error, too many inbound requests")
 	w.WriteHeader(503)
 	errorTemplatesSlice := make([]string, len(templatesSlice))
@@ -227,6 +233,9 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 	if isLoggedIn {
 		personalString = fmt.Sprintf(", %s", name)
 		log.Debugf("User is logged in as: %s", name)
+		c.Incr("time-user", 1)
+	} else {
+		c.Incr("time-anon", 1)
 	}
 	timeTemplatesSlice := make([]string, len(templatesSlice))
 	copy(timeTemplatesSlice, templatesSlice)
@@ -241,6 +250,8 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	removeInboundRequest()
 	timeTmpl.ExecuteTemplate(w, "template", data)
+	c.Incr("Total", 1)
+	c.Incr("200", 1)
 	return
 }
 
@@ -258,6 +269,8 @@ func errorer(w http.ResponseWriter, r *http.Request) {
 	errorTemplatesSlice = append(errorTemplatesSlice, fmt.Sprintf("%s/404.html", templatesFolder))
 	var errorPage = template.Must(template.New("ErrorPage").ParseFiles(errorTemplatesSlice...))
 	errorPage.ExecuteTemplate(w, "template", "")
+	c.Incr("Total", 1)
+	c.Incr("404", 1)
 	return
 }
 
@@ -287,6 +300,9 @@ func renderIndex(w http.ResponseWriter, name string) {
 		Name: name,
 	}
 	indexPage.ExecuteTemplate(w, "template", person)
+	c.Incr("Total", 1)
+	c.Incr("200", 1)
+	return
 }
 
 // Renders the page if there is no name passed into
@@ -297,6 +313,10 @@ func renderNoNamePage(w http.ResponseWriter) {
 	noNameTemplatesSlice = append(noNameTemplatesSlice, fmt.Sprintf("%s/noNamePage.html", templatesFolder))
 	var noNamePage = template.Must(template.New("NoNamePage").ParseFiles(noNameTemplatesSlice...))
 	noNamePage.ExecuteTemplate(w, "template", "")
+	c.Incr("Total", 1)
+	c.Incr("200", 1)
+	c.Incr("login", 1)
+	return
 }
 
 // Renders the login page to the website
@@ -306,6 +326,10 @@ func renderLogin(w http.ResponseWriter, r *http.Request) {
 	loginTemplatesSlice = append(loginTemplatesSlice, fmt.Sprintf("%s/loginPage.html", templatesFolder))
 	var loginPage = template.Must(template.New("LoginPage").ParseFiles(loginTemplatesSlice...))
 	loginPage.ExecuteTemplate(w, "template", "")
+	c.Incr("Total", 1)
+	c.Incr("200", 1)
+	c.Incr("login", 1)
+	return
 }
 
 // Checks the if the user is logged in and if there is a user
@@ -356,6 +380,9 @@ func logoutPage(w http.ResponseWriter, r *http.Request) {
 	logoutTemplatesSlice = append(logoutTemplatesSlice, fmt.Sprintf("%s/logout.html", templatesFolder))
 	var logoutPage = template.Must(template.New("logout").ParseFiles(logoutTemplatesSlice...))
 	logoutPage.ExecuteTemplate(w, "template", "")
+	c.Incr("Total", 1)
+	c.Incr("200", 1)
+	return
 }
 
 // Function for printing the request URL path
@@ -368,6 +395,21 @@ func printRequests(r *http.Request) {
 func templateSetup() {
 	templatesSlice = append(templatesSlice, fmt.Sprintf("%s/template.html", templatesFolder))
 	templatesSlice = append(templatesSlice, fmt.Sprintf("%s/menu.html", templatesFolder))
+}
+
+// monitor path uri
+func monitor(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	profile := fmt.Sprintf(`{"login":"%v",
+                "time-user": "%v",
+                "time-anon": "%v",
+                "200": "%v",
+                "404": "%v",
+                "503": "%v",
+                "Total": "%v"}`,
+		c.Get("login"), c.Get("time-user"), c.Get("time-anon"),
+		c.Get("200"), c.Get("404"), c.Get("503"), c.Get("Total"))
+	fmt.Fprintf(w, profile)
 }
 
 // Main handler that runs the server on the port or shows the version of the server
@@ -412,6 +454,7 @@ func main() {
 	http.HandleFunc("/index.html", indexPage)
 	http.HandleFunc("/login", loginPage)
 	http.HandleFunc("/logout", logoutPage)
+	http.HandleFunc("/monitor", monitor)
 	http.HandleFunc("/", errorer)
 	http.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir("css"))))
 	var portString = fmt.Sprintf(":%d", port)

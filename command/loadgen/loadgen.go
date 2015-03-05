@@ -49,7 +49,7 @@ func getStatusCentury(statusCode int) string {
 
 // Prints the output information
 // about all the requests
-func printMap(runtime int) {
+func printMap() {
 	for _, k := range keys {
 		fmt.Printf("%s: %v \n", k, c.Get(k))
 	}
@@ -127,6 +127,6 @@ func main() {
 	//Added a second to let a little extra collection happen
 	time.Sleep(time.Duration(runtime+1) * time.Second)
 	fmt.Println()
-	printMap(runtime)
+	printMap()
 	os.Exit(0)
 }
