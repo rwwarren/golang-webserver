@@ -1,0 +1,5 @@
+TODO:
+
+- timerver /monitor and monitoring
+- authserver /monitor and monitoring
+- monitor flags and run
