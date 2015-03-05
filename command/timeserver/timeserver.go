@@ -315,7 +315,6 @@ func renderNoNamePage(w http.ResponseWriter) {
 	noNamePage.ExecuteTemplate(w, "template", "")
 	c.Incr("Total", 1)
 	c.Incr("200", 1)
-	c.Incr("login", 1)
 	return
 }
 
@@ -328,7 +327,6 @@ func renderLogin(w http.ResponseWriter, r *http.Request) {
 	loginPage.ExecuteTemplate(w, "template", "")
 	c.Incr("Total", 1)
 	c.Incr("200", 1)
-	c.Incr("login", 1)
 	return
 }
 
@@ -358,6 +356,8 @@ func loginPage(w http.ResponseWriter, r *http.Request) {
 		cookie := setCookie(w, r)
 		setName(cookie.Value, formName)
 		log.Debugf("Name passed in: %s", formName)
+		c.Incr("login", 1)
+		c.Incr("302", 1)
 		http.Redirect(w, r, "/", 302)
 		return
 	} else {
@@ -404,11 +404,12 @@ func monitor(w http.ResponseWriter, r *http.Request) {
                 "time-user": "%v",
                 "time-anon": "%v",
                 "200": "%v",
+                "302": "%v",
                 "404": "%v",
                 "503": "%v",
                 "Total": "%v"}`,
 		c.Get("login"), c.Get("time-user"), c.Get("time-anon"),
-		c.Get("200"), c.Get("404"), c.Get("503"), c.Get("Total"))
+		c.Get("200"), c.Get("302"), c.Get("404"), c.Get("503"), c.Get("Total"))
 	fmt.Fprintf(w, profile)
 }
 
