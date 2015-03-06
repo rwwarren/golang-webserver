@@ -20,27 +20,76 @@ import (
 	"time"
 	"io/ioutil"
 	"sync"
+        "encoding/json"
 )
+
+type Sample struct {
+//var Sample struct {
+      Time string
+      //value []byte
+      //time time.Time
+      Value map[string]interface{}
+      //Value string
+}
+
+//type Sample [string][]byte
 
 // Stores the cookie information
 var concurrentMap struct {
 	sync.RWMutex
-	cookieMap map[string]string
+	target map[string][]Sample
 }
 
 // Initalizes the authserver with the important user storage things
 func init() {
-  // map[string] []Sample
 	concurrentMap = struct {
 		sync.RWMutex
-		cookieMap map[string]string
-	}{cookieMap: make(map[string]string)}
+		target map[string][]Sample
+	}{target: make(map[string][]Sample)}
 }
 
-func printResults(){
-	//concurrentMap.RLock()
+func printResults(interval int){
+	concurrentMap.RLock()
 	//name := concurrentMap.cookieMap[formCookie]
-	//concurrentMap.RUnlock()
+	sample := concurrentMap.target
+        //avgResult := make([]string, len(sample))
+        //dsf := slice[len(sample)]string
+        for keys, values := range sample {
+          log.Infof("key: %v", keys)
+          //log.Infof("value: %v", values)
+          for i := 0; i < len(values); i++ {
+            fmt.Printf("value at %v: %v\n", i, values[i])
+            fmt.Println(values[i].Value)
+            //type amounts struct {
+            //      Name  string
+            //      Amount string
+            //}
+            //var jsonResults []amounts
+//            var jsonResults map[string]interface{}
+//            err := json.Unmarshal([]byte(values[i].Value), &jsonResults)
+//            //jsonResult, err := json.Marshal(values[i].Value)
+//            if err != nil {
+//              log.Errorf("%v", err)
+//            }
+//            //fmt.Println(jsonResults)
+//            for reqName, amount := range jsonResults {
+//              //safd
+//              fmt.Printf("%s: ", reqName)
+//              fmt.Println(amount)
+//            }
+            //fmt.Printf("total: %s\n", jsonResults["Total"])
+            //fmt.Println(jsonResult)
+            //err := json.Marshal(values[i].Value, &jsonResults)
+            for reqName, amount := range values[i].Value {
+              fmt.Println(reqName)
+              fmt.Println(amount)
+            }
+          }
+        }
+        //fmt.Printf("test %v \n", concurrentMap.target)
+        time.Sleep(time.Second)
+        fmt.Printf("test %v \n", concurrentMap.target["http://localhost:9090/monitor"])
+	concurrentMap.RUnlock()
 }
 
 func collectStats(url string, sampleSec int) {
@@ -51,11 +100,35 @@ func collectStats(url string, sampleSec int) {
 			fmt.Println(err)
 		} else {
 			//fmt.Println(response)
-                        fmt.Println(url)
+                        //log.Infof("Requested url: %s", url)
+                        //fmt.Println(url)
                         body, _ := ioutil.ReadAll(response.Body)
                         //body, err := ioutil.ReadAll(response.Body)
 	                respBody := string(body)
-			fmt.Println(respBody)
+			//log.Infof("response body: %s", respBody)
+                        log.Infof("Requested url: %s. Response body: %s", url, respBody)
+                        concurrentMap.Lock()
+                        sampleSlice := concurrentMap.target[url]
+                        //if sampleSlice == nil {
+                        //        //asdf
+                        //}
+                        var jsonResults map[string]interface{}
+                        err := json.Unmarshal([]byte(respBody), &jsonResults)
+                        //jsonResult, err := json.Marshal(values[i].Value)
+                        if err != nil {
+                          log.Errorf("%v", err)
+                        }
+                        newSample := Sample{fmt.Sprintf("%v", time.Now()), jsonResults}
+                        //newSample := Sample{fmt.Sprintf("%v", time.Now()), respBody}
+                        //fmt.Printf("new slice %s\n", newSample)
+                        //fmt.Printf("new slice %s\n", sampleSlice)
+                        //newSample := Sample(time.Now(), respBody)
+                        sampleSlice = append(sampleSlice, newSample)
+                        concurrentMap.target[url] = sampleSlice
+                        //fmt.Printf("sample slice %s\n", sampleSlice)
+                        //sampleSlice = Append(sampleSlice, newSample)
+                        concurrentMap.Unlock()
+			//fmt.Println(respBody)
 			//fmt.Println(response.Body)
 		}
 	}
@@ -94,6 +167,6 @@ func main() {
 		go collectStats(monitorUrl, sampleSec)
 	}
 	time.Sleep(time.Duration(monitorRuntime) * time.Second)
-	printResults()
+	printResults(sampleSec)
 	//TODO make the targets: split it on the commas
 }
