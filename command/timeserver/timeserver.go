@@ -447,7 +447,7 @@ func main() {
 		}
 		gitVersion := fmt.Sprintf("%v", out.String())
 		fmt.Printf("Version according to git: %v", gitVersion)
-		fmt.Println("Assignment Version: 5")
+		fmt.Println("Assignment Version: 6")
 		os.Exit(0)
 		return
 	}

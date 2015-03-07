@@ -62,6 +62,7 @@ func printResults(interval int){
           for i := 0; i < len(values); i++ {
             //fmt.Printf("value at %v: %v\n", i, values[i])
             //fmt.Println(values[i].Value)
+            //TODO print this better????? finsh this up
             fmt.Println(values[i].Average)
             //type amounts struct {
             //      Name  string
