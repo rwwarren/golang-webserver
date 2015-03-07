@@ -2,3 +2,4 @@
 - flags
 - json config
 - actual supervision
+- update timeserver -v to 7
