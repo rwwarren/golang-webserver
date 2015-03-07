@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"sync"
         "encoding/json"
+        "strconv"
 )
 
 type Sample struct {
@@ -29,6 +30,7 @@ type Sample struct {
       //value []byte
       //time time.Time
       Value map[string]interface{}
+      Average map[string]interface{}
       //Value string
 }
 
@@ -58,8 +60,9 @@ func printResults(interval int){
           log.Infof("key: %v", keys)
           //log.Infof("value: %v", values)
           for i := 0; i < len(values); i++ {
-            fmt.Printf("value at %v: %v\n", i, values[i])
-            fmt.Println(values[i].Value)
+            //fmt.Printf("value at %v: %v\n", i, values[i])
+            //fmt.Println(values[i].Value)
+            fmt.Println(values[i].Average)
             //type amounts struct {
             //      Name  string
             //      Amount string
@@ -80,57 +83,122 @@ func printResults(interval int){
             //fmt.Printf("total: %s\n", jsonResults["Total"])
             //fmt.Println(jsonResult)
             //err := json.Marshal(values[i].Value, &jsonResults)
-            for reqName, amount := range values[i].Value {
-              fmt.Println(reqName)
-              fmt.Println(amount)
-            }
+            //for reqName, amount := range values[i].Value {
+            //  fmt.Println(reqName)
+            //  fmt.Println(amount)
+            //}
+//            reqName := values[i].Value
+//            //reqName := Keys(values[i].Value)
+//            for i := 0; i < len(reqName); i++ {
+//            //for reqName, amount := range values[i].Value {
+//              fmt.Println(reqName)
+//              //fmt.Println(reqName.Get(i))
+//            }
           }
         }
         //fmt.Printf("test %v \n", concurrentMap.target)
         time.Sleep(time.Second)
-        fmt.Printf("test %v \n", concurrentMap.target["http://localhost:9090/monitor"])
+        //fmt.Printf("test %v \n", concurrentMap.target["http://localhost:9090/monitor"])
+        //Print overall average
 	concurrentMap.RUnlock()
 }
 
-func collectStats(url string, sampleSec int) {
-	for {
-		time.Sleep(time.Duration(sampleSec) * time.Second)
+//
+func request(url string, sampleSec int, pastJson map[string]interface{}) map[string]interface{} {
+                var jsonResults map[string]interface{}
 		response, err := http.Get(url)
 		if err != nil {
 			fmt.Println(err)
 		} else {
-			//fmt.Println(response)
-                        //log.Infof("Requested url: %s", url)
-                        //fmt.Println(url)
                         body, _ := ioutil.ReadAll(response.Body)
-                        //body, err := ioutil.ReadAll(response.Body)
 	                respBody := string(body)
-			//log.Infof("response body: %s", respBody)
                         log.Infof("Requested url: %s. Response body: %s", url, respBody)
                         concurrentMap.Lock()
                         sampleSlice := concurrentMap.target[url]
-                        //if sampleSlice == nil {
-                        //        //asdf
-                        //}
-                        var jsonResults map[string]interface{}
+                        //var jsonResults map[string]interface{}
                         err := json.Unmarshal([]byte(respBody), &jsonResults)
-                        //jsonResult, err := json.Marshal(values[i].Value)
                         if err != nil {
                           log.Errorf("%v", err)
                         }
-                        newSample := Sample{fmt.Sprintf("%v", time.Now()), jsonResults}
-                        //newSample := Sample{fmt.Sprintf("%v", time.Now()), respBody}
-                        //fmt.Printf("new slice %s\n", newSample)
-                        //fmt.Printf("new slice %s\n", sampleSlice)
-                        //newSample := Sample(time.Now(), respBody)
+                        //avgJson := make(map[string]string)
+                        //var avgJson map[string]interface{}
+                        if pastJson != nil {
+                          for key, value := range jsonResults {
+                            firstValueStr := value.(string)
+                            secondValueStr := pastJson[key].(string)
+                            firstValue, firstErr := strconv.Atoi(firstValueStr)
+                            secondValue, secondErr := strconv.Atoi(secondValueStr)
+                            if firstErr != nil || secondErr != nil {
+                              fmt.Println(firstErr)
+                              fmt.Println(secondErr)
+                            }
+                            //avg := ((strconv.Atoi(firstValue) + strconv.Atoi(secondValue)) / sampleSec)
+                            avg := ((firstValue - secondValue) / sampleSec)
+                            //avg := ((int(value) + int(pastJson[key])) / sampleSec)
+                            pastJson[key] = avg
+                            //avgJson[key] = avg
+                            //fmt.Printf("avgKson %v\n", key)
+                            //fmt.Printf("avgValu %s\n", value)
+                            //fmt.Printf("avgValu %s\n", value)
+                          }
+                        }
+                        //keys = []int{}
+                        //for k, value := range  {
+                        //      keys = append(keys, k)
+                        //}
+                        newSample := Sample{fmt.Sprintf("%v", time.Now()), jsonResults, pastJson}
+                        //newSample := Sample{fmt.Sprintf("%v", time.Now()), jsonResults, avgJson}
+                        //newSample := Sample{fmt.Sprintf("%v", time.Now()), jsonResults, pastJson}
                         sampleSlice = append(sampleSlice, newSample)
                         concurrentMap.target[url] = sampleSlice
-                        //fmt.Printf("sample slice %s\n", sampleSlice)
-                        //sampleSlice = Append(sampleSlice, newSample)
                         concurrentMap.Unlock()
-			//fmt.Println(respBody)
-			//fmt.Println(response.Body)
 		}
+                return jsonResults
+}
+
+func collectStats(url string, sampleSec int) {
+        //firstTime := 
+        firstResult := request(url, sampleSec, nil)
+	for {
+                //TODO compute averages
+		time.Sleep(time.Duration(sampleSec) * time.Second)
+                firstResult = request(url, sampleSec, firstResult)
+		//response, err := http.Get(url)
+		//if err != nil {
+		//	fmt.Println(err)
+		//} else {
+		//	//fmt.Println(response)
+                //        //log.Infof("Requested url: %s", url)
+                //        //fmt.Println(url)
+                //        body, _ := ioutil.ReadAll(response.Body)
+                //        //body, err := ioutil.ReadAll(response.Body)
+	        //        respBody := string(body)
+		//	//log.Infof("response body: %s", respBody)
+                //        log.Infof("Requested url: %s. Response body: %s", url, respBody)
+                //        concurrentMap.Lock()
+                //        sampleSlice := concurrentMap.target[url]
+                //        //if sampleSlice == nil {
+                //        //        //asdf
+                //        //}
+                //        var jsonResults map[string]interface{}
+                //        err := json.Unmarshal([]byte(respBody), &jsonResults)
+                //        //jsonResult, err := json.Marshal(values[i].Value)
+                //        if err != nil {
+                //          log.Errorf("%v", err)
+                //        }
+                //        newSample := Sample{fmt.Sprintf("%v", time.Now()), jsonResults, currentaverage}
+                //        //newSample := Sample{fmt.Sprintf("%v", time.Now()), respBody}
+                //        //fmt.Printf("new slice %s\n", newSample)
+                //        //fmt.Printf("new slice %s\n", sampleSlice)
+                //        //newSample := Sample(time.Now(), respBody)
+                //        sampleSlice = append(sampleSlice, newSample)
+                //        concurrentMap.target[url] = sampleSlice
+                //        //fmt.Printf("sample slice %s\n", sampleSlice)
+                //        //sampleSlice = Append(sampleSlice, newSample)
+                //        concurrentMap.Unlock()
+		//	//fmt.Println(respBody)
+		//	//fmt.Println(response.Body)
+		//}
 	}
 }
 
