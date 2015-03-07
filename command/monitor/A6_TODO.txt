@@ -2,4 +2,4 @@ TODO:
 
 - DONE timerver /monitor and monitoring
 - DONE authserver /monitor and monitoring
-- monitor flags and run
+- DONE monitor flags and run

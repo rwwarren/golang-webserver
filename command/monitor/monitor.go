@@ -15,11 +15,13 @@ package main
 
 import (
 	log "../../seelog-master/"
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -53,17 +55,26 @@ func printResults(interval int) {
 	concurrentMap.RLock()
 	sample := concurrentMap.target
 	concurrentMap.RUnlock()
+	fmt.Println()
+	fmt.Println()
+	fmt.Println("Results (averages):")
+	fmt.Println()
+	fmt.Println()
 	for keys, values := range sample {
-		log.Infof("key: %v", keys)
-		for i := 0; i < len(values); i++ {
-			//fmt.Printf("value at %v: %v\n", i, values[i])
-			//fmt.Println(values[i].Value)
-			//TODO print this better????? finsh this up
-			//TODO print this json formatted
-			fmt.Println(values[i].Average)
+		fmt.Println(keys)
+		for i := 1; i < len(values); i++ {
+			jsonString, err := json.Marshal(values[i].Average)
+			if err != nil {
+				fmt.Println(err)
+			}
+			var out bytes.Buffer
+			json.Indent(&out, jsonString, "", "\t")
+			out.WriteTo(os.Stdout)
+			fmt.Println()
+
 		}
+		fmt.Println()
 	}
-	time.Sleep(time.Second)
 }
 
 // Gets ad saves the json from the current target
@@ -147,5 +158,4 @@ func main() {
 	}
 	time.Sleep(time.Duration(monitorRuntime) * time.Second)
 	printResults(sampleSec)
-	//TODO make the targets: split it on the commas
 }
