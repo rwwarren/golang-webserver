@@ -13,13 +13,13 @@ package main
 
 import (
 	log "../../seelog-master/"
-        "os"
-        "os/exec"
+        //"os"
+        //"os/exec"
         "strings"
 	//"bytes"
 	//"encoding/json"
-	//"flag"
-	//"fmt"
+	"flag"
+	"fmt"
 	//"io/ioutil"
 	//"net/http"
 	//"os"
@@ -34,13 +34,19 @@ import (
 func init() {
 }
 
+func getSupervisionList() []string{
+
+  return nil
+}
+
 // Main function of the supervisor
 func main() {
 	defer log.Flush()
 	logFile := flag.String("log", "logConfig", "This is the logger configuration file")
-	//targetList := flag.String("targets", "http://localhost:8080,http://localhost:9090", "This is the target list of urls")
-	//sampleInterval := flag.Int("sample-interval-sec", 2, "This is the sample request rate")
-	//runtime := flag.Int("runtime-sec", 20, "This is the monitor runtime")
+	portRange := flag.String("port-range", "8080-9090", "This is the port range")
+	dumpLoc := flag.String("dumpfile", "backup.bak", "This is the dumpfile")
+	loadFile := flag.String("loadfile", "config.json", "This is the dumpfile")
+        checkout := flag.Int("checkpoint-interval", 2, "This is the checkpoint interval")
 	flag.Parse()
 	logFileName := fmt.Sprintf("etc/%s.xml", *logFile)
 	logger, logError := log.LoggerFromConfigAsFile(logFileName)
@@ -55,11 +61,16 @@ func main() {
 	log.Warn("Testing warn")
 	log.Error("Testing error")
 	log.Critical("Testing critical")
-	//targets := *targetList
-	//sampleSec := *sampleInterval
-	//monitorRuntime := *runtime
-	//targetsList := strings.Split(targets, ",")
-	//log.Infof("target list Flag: %s", targets)
-	//log.Infof("sample-interval-sec Flag: %v", sampleSec)
-	//log.Infof("runtime Flag: %v", monitorRuntime)
+        ports := *portRange
+	portsList := strings.Split(ports, "-")
+        dumpfile := *dumpLoc
+        checkoutInterval := *checkout
+        loadingFile := *loadFile
+	log.Infof("port range Flag: %s", ports)
+	log.Infof("port range list: %s", portsList)
+	log.Infof("dumpfile FLag: %s", dumpfile)
+	log.Infof("checkpoint interval Flag: %v", checkoutInterval)
+	log.Infof("loading file Flag: %s", loadingFile)
+        //supervisionList := getSupervisionList
+        //strings.Replace on {{port}}
 }

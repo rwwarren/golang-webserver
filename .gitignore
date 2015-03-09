@@ -6,6 +6,7 @@ command/timeserver/timeserver
 command/authserver/authserver
 command/loadgen/loadgen
 command/monitor/monitor
+command/supervisor/supervisor
 test/*
 *.tar.gz
 *.tar
