@@ -3,4 +3,4 @@
 - json config
 - josn config CLI
 - actual supervision
-- update timeserver -v to 7
+DONE - update timeserver -v to 7
