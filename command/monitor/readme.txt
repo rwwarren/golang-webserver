@@ -6,11 +6,10 @@
 
   Examples:   make
               make all
-              make run PORT=3030
-              make run V=1
-              make run BREW=1
               make run LOG=asdf
-              make run TEMPLATE=asdf
+              make run TARGET=http://localhost:8080,http://localhost:9090
+              make run RATE=2
+              make run RUNTIME=20
 
   Options:
     help      Displays this, the help message
@@ -29,16 +28,9 @@
               It is the location where go is installed on the computer
     GOROOT    If unset, then GOROOT will default to "/usr/apps/go/hg/"
               otherwise set it to the location where go is installed
-    PORT      Set the port for the server to run on
     LOG       Set the log file config name. Set the LOG to "assignmentLog"
               for the one based on the project specs
-    TEMPLATE  Set the template directory location
-    V         Will display the server version and quit
-    AHOST     Authhost for the authserver
-    APORT     Authhost port for the authserver
-    ATIMEOUT  Auth server timeout (ms)
-    RESP      Average response time for the server
-    DEVIATION Deviation for the average response time
-    INFLIGHT  Max number of inflight concurrent requests
-
+    TARGET    Is the list of targets to look at (comma seperated)
+    RATE      Is the request rate (seconds)
+    RUNTIME   Is the monitor runtime (seconds)
 

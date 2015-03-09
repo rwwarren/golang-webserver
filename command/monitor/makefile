@@ -6,7 +6,7 @@
 # LOG is logger configuration xml file
 # TARGET is the comma seperated list of urls
 # for the monitor to test. RATE is the rate of
-# sampling. RUN is the montiro runtime
+# sampling. RUN is the monitor runtime
 
 GOROOT="/usr/apps/go/hg/"
 GOLOC="/usr/apps/go/hg/bin/go"

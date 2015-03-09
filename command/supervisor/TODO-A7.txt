@@ -1,5 +1,6 @@
 - makefile
 - flags
 - json config
+- josn config CLI
 - actual supervision
 - update timeserver -v to 7

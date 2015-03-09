@@ -6,11 +6,12 @@
 
   Examples:   make
               make all
-              make run PORT=3030
-              make run V=1
               make run BREW=1
               make run LOG=asdf
-              make run TEMPLATE=asdf
+              make run PORTS=8080-9090
+              make run LOAD=fdas
+              make run DUMP=asdf
+              make run CHECK=2
 
   Options:
     help      Displays this, the help message
@@ -29,16 +30,10 @@
               It is the location where go is installed on the computer
     GOROOT    If unset, then GOROOT will default to "/usr/apps/go/hg/"
               otherwise set it to the location where go is installed
-    PORT      Set the port for the server to run on
+    PORTS     Set the port range for the supervisor
     LOG       Set the log file config name. Set the LOG to "assignmentLog"
               for the one based on the project specs
-    TEMPLATE  Set the template directory location
-    V         Will display the server version and quit
-    AHOST     Authhost for the authserver
-    APORT     Authhost port for the authserver
-    ATIMEOUT  Auth server timeout (ms)
-    RESP      Average response time for the server
-    DEVIATION Deviation for the average response time
-    INFLIGHT  Max number of inflight concurrent requests
-
+    DUMP      Set the backup file location
+    LOAD      Set loadfile for the supervisor
+    CHECK     Set the check interval
 

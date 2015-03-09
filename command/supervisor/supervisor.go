@@ -14,21 +14,36 @@ package main
 import (
 	log "../../seelog-master/"
 	//"os"
-	//"os/exec"
+	"os/exec"
 	"strings"
-	//"bytes"
+        //test
+	"bytes"
+        //
 	"encoding/json"
 	"flag"
 	"fmt"
 	//"io/ioutil"
 	//"net/http"
 	"os"
-	//"strconv"
+	"strconv"
 	//"strings"
-	//"sync"
+	"sync"
 	//"time"
 	"io/ioutil"
 )
+
+// Stores the port information
+var concurrentMap struct {
+	sync.RWMutex
+	portMap []Ports
+        size int
+	//portMap map[int]bool
+}
+
+type Ports struct {
+  PortNumber int
+  IsUsed bool
+}
 
 type configs struct {
 	Command []string
@@ -38,6 +53,58 @@ type configs struct {
 
 // Initalizes the
 func init() {
+	concurrentMap = struct {
+		sync.RWMutex
+                portMap []Ports
+                size int
+		//portMap map[int]bool
+	//}{}
+	//}{portMap: make(map[int]bool)}
+	}{portMap: make([]Ports, 9999)}
+}
+
+func supervise(currentConfig configs){
+  //supervise the server
+  fmt.Println("get here")
+  log.Info("get here")
+  size := len(currentConfig.Command) - 1
+  cmd := exec.Command(currentConfig.Command[0], currentConfig.Command[1:size]...)
+  //testing
+  var out bytes.Buffer
+  cmd.Stdout = &out
+  //
+  err := cmd.Run()
+  if err != nil {
+      log.Critical(err)
+  }
+  fmt.Printf("in all caps: %q\n", out.String())
+
+}
+
+func buildPorts(ports []string){
+  min, minerr := strconv.Atoi(ports[0])
+  max, maxerr := strconv.Atoi(ports[1])
+  if minerr != nil || maxerr != nil{
+        // handle error
+        fmt.Println(minerr)
+        fmt.Println(maxerr)
+        os.Exit(2)
+  }
+  concurrentMap.Lock()
+  total := (max - min)
+  //fmt.Println(total)
+  //myMap := make([]Ports, total)
+  //concurrentMap.portMap = myMap
+  for i := 0; i <= total; i++ {
+  //for currentPort := min; currentPort <= max; currentPort++ {
+      //myMap[i] = Ports{(min + i), false}
+      concurrentMap.portMap[i] = Ports{(min + i), false}
+      //fmt.Println(concurrentMap.portMap[i])
+      //concurrentMap.portMap[currentPort] = false
+  }
+  concurrentMap.size = total
+  concurrentMap.Unlock()
+
 }
 
 func getLoadFile(loadingFile string) []byte {
@@ -55,10 +122,10 @@ func getSupervisionList(loadedFile []byte) []configs {
 	if err != nil {
 		log.Critical(err)
 	}
-	for key, val := range configList {
-		fmt.Println(key)
-		fmt.Println(val)
-	}
+	//for key, val := range configList {
+	//	fmt.Println(key)
+	//	fmt.Println(val)
+	//}
 	return configList
 }
 
@@ -91,11 +158,19 @@ func main() {
 	loadingFile := *loadFile
 	log.Infof("port range Flag: %s", ports)
 	log.Infof("port range list: %s", portsList)
-	log.Infof("dumpfile FLag: %s", dumpfile)
+	log.Infof("dumpfile Flag: %s", dumpfile)
 	log.Infof("checkpoint interval Flag: %v", checkoutInterval)
 	log.Infof("loading file Flag: %s", loadingFile)
+        buildPorts(portsList)
 	loadedString := getLoadFile(loadingFile)
 	supervisionList := getSupervisionList(loadedString)
-	fmt.Println(supervisionList)
+	//fmt.Println(supervisionList)
+	for _, val := range supervisionList {
+	//for key, val := range supervisionList {
+		//fmt.Println(key)
+		//fmt.Println(val)
+                //go supervise(val)
+                supervise(val)
+	}
 	//strings.Replace on {{port}}
 }

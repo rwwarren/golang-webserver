@@ -8,6 +8,8 @@
 # DUMP is the backup dumpfile for
 # LOAD is the loadfile for the json config
 # CHECK is the checkpoint interval for the supervisor
+# processes command on a mac will show all processes
+# add "PORT=:PORTNUM" to search on that port
 
 GOROOT="/usr/apps/go/hg/"
 GOLOC="/usr/apps/go/hg/bin/go"
@@ -48,6 +50,10 @@ help:
 commits:
 	@echo "Total commits on branch: "
 	@echo $(shell git rev-list --count HEAD)
+
+processes:
+	lsof -i $(PORT)
+
 print:
 	@echo "GOROOT: " $(GOROOT)
 	@echo "GOLOC: " $(GOLOC)

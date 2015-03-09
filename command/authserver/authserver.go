@@ -311,6 +311,7 @@ func main() {
 	err := http.ListenAndServe(portString, nil)
 	if err != nil {
 		log.Errorf("Server Failed: %s", err)
+		fmt.Println("Server Failed: %s", err)
 		os.Exit(1)
 	}
 	done = true

@@ -1,7 +1,7 @@
 
 [{"command": ["../authserver/authserver", "--log=etc/auth.xml"],
    "output":"out/auth.out", "error": "out/auth.err"},
- {"command": ["../timserver/timeserver", "--log=etc/log-01.xml", "--port={{port}}",
+ {"command": ["../timeserver/timeserver", "--log=etc/log-01.xml", "--port={{port}}",
               "--max-inflight=80",
               "--avg-response-ms=500", "--response-deviation-ms=300"],
   "output": "out/timeserver-01.out", "error": "out/timeserver-01.err"},
