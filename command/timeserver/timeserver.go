@@ -223,17 +223,17 @@ func setName(uuid string, name string) {
 // Handles the timeserver which shows the current time
 // for the local timezone
 func timeHandler(w http.ResponseWriter, r *http.Request) {
+	addInboundRequest()
+	if !canHaveMoreInboundRequests() {
+		maxInboundError(w, r)
+		return
+	}
 	waitTime := rand.NormFloat64()*float64(deviation) + float64(avgResponse)
 	if waitTime < 0 {
 		waitTime *= -1
 	}
 	log.Infof("Artifically creating delay for: %v milliseconds", waitTime)
 	time.Sleep(time.Duration(waitTime) * time.Millisecond)
-	addInboundRequest()
-	if !canHaveMoreInboundRequests() {
-		maxInboundError(w, r)
-		return
-	}
 	printRequests(r)
 	const layout = "3:04:05 PM"
 	const UTClayout = "15:04:05 MST"
