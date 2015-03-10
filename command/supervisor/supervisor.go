@@ -30,6 +30,7 @@ import (
 	"sync"
 	//"time"
 	"io/ioutil"
+        "path/filepath"
 )
 
 // Stores the port information
@@ -68,17 +69,46 @@ func supervise(currentConfig configs){
   fmt.Println("get here")
   log.Info("get here")
   size := len(currentConfig.Command) - 1
-  cmd := exec.Command(currentConfig.Command[0], currentConfig.Command[1:size]...)
+  args := make([]string, size)
+  fmt.Println(size)
+  for i := 0; i < size; i++ {
+    currentCommand := currentConfig.Command[i + 1]
+    if strings.Contains(currentCommand, "{{port}}") {
+      foundPort := getFreePort()
+      currentCommand = strings.Replace(currentCommand, "{{port}}", foundPort, 1)
+    }
+    fmt.Printf("at this sport: %s\n", currentCommand)
+    args[i] = currentCommand
+  }
+  cmd := exec.Command(currentConfig.Command[0], args...)
+  fmt.Println(cmd)
+  //cmd := exec.Command(currentConfig.Command[0], currentConfig.Command[1:size]...)
   //testing
   var out bytes.Buffer
   cmd.Stdout = &out
   //
+  //err := cmd.Start()
   err := cmd.Run()
+  fmt.Println(cmd.Process.Pid)
   if err != nil {
       log.Critical(err)
   }
   fmt.Printf("in all caps: %q\n", out.String())
 
+}
+
+func getFreePort() string {
+  concurrentMap.Lock()
+  var portNum int
+  for i := range concurrentMap.portMap {
+   if !concurrentMap.portMap[i].IsUsed {
+    fmt.Printf("THIS LOCATION %v \n", i)
+    concurrentMap.portMap[i].IsUsed = true
+    portNum = concurrentMap.portMap[i].PortNumber
+   }
+  }
+  concurrentMap.Unlock()
+  return string(portNum)
 }
 
 func buildPorts(ports []string){
@@ -165,6 +195,15 @@ func main() {
 	loadedString := getLoadFile(loadingFile)
 	supervisionList := getSupervisionList(loadedString)
 	//fmt.Println(supervisionList)
+
+    filename := os.Args[0]
+    filedirectory := filepath.Dir(filename)
+    thepath, err := filepath.Abs(filedirectory)
+    if err != nil {
+       log.Critical(err)
+    }
+    fmt.Println(thepath)
+
 	for _, val := range supervisionList {
 	//for key, val := range supervisionList {
 		//fmt.Println(key)

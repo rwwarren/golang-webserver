@@ -36,6 +36,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -62,12 +63,20 @@ var inboundRequests struct {
 	sync.RWMutex
 	currentRequests int
 }
+var fullpath string
 
 // Counter
 var c = counter.New()
 
 // Intitalizes the timeserver with authserver information
 func init() {
+	filename := os.Args[0]
+	filedirectory := filepath.Dir(filename)
+	thepath, err := filepath.Abs(filedirectory)
+	if err != nil {
+		log.Critical(err)
+	}
+	fullpath = thepath
 	authPort := flag.Int("authport", 9090, "This is the authserver default port")
 	authHost := flag.String("authhost", "http://localhost", "This is the authserver default host")
 	inflight := flag.Int("max-inflight", 0, "Max number of inflight requests")
@@ -416,7 +425,7 @@ func monitor(w http.ResponseWriter, r *http.Request) {
 // Main handler that runs the server on the port or shows the version of the server
 func main() {
 	defer log.Flush()
-	templatesFolder = templatesFlag
+	templatesFolder = fmt.Sprintf("%s/%s", fullpath, templatesFlag)
 	templateSetup()
 	logFileName := fmt.Sprintf("etc/%s.xml", logFile)
 	logger, logError := log.LoggerFromConfigAsFile(logFileName)

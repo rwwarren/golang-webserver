@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -35,6 +36,7 @@ var templatesSlice []string
 var done bool
 var loadingFile string
 var backupFile string
+var fullpath string
 
 // Stores the cookie information
 var concurrentMap struct {
@@ -47,7 +49,14 @@ var c = counter.New()
 
 // Initalizes the authserver with the important user storage things
 func init() {
-	templatesFolder = "templates"
+	filename := os.Args[0]
+	filedirectory := filepath.Dir(filename)
+	thepath, err := filepath.Abs(filedirectory)
+	if err != nil {
+		log.Critical(err)
+	}
+	fullpath = thepath
+	templatesFolder = fmt.Sprintf("%s/templates", fullpath)
 	templatesSlice = append(templatesSlice, fmt.Sprintf("%s/template.html", templatesFolder))
 	concurrentMap = struct {
 		sync.RWMutex
@@ -290,8 +299,8 @@ func main() {
 	}
 	var portString = fmt.Sprintf(":%d", *port)
 	log.Infof("IpAddress and port: %s%s", ipAddr, portString)
-	loadingFile = fmt.Sprintf("backup/%s", *dumpfile)
-	backupFile = fmt.Sprintf("backup/%s", *dumpfile)
+	loadingFile = fmt.Sprintf("%s/backup/%s", fullpath, *dumpfile)
+	backupFile = fmt.Sprintf("%s/backup/%s", fullpath, *dumpfile)
 	buildMap(loadingFile)
 	done = false
 	go backupServer(*backupInterval)
@@ -311,7 +320,6 @@ func main() {
 	err := http.ListenAndServe(portString, nil)
 	if err != nil {
 		log.Errorf("Server Failed: %s", err)
-		fmt.Println("Server Failed: %s", err)
 		os.Exit(1)
 	}
 	done = true
