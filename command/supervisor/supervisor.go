@@ -101,17 +101,22 @@ func supervise(currentConfig configs, thepath string, wg *sync.WaitGroup) {
 	if err != nil {
 		log.Critical(err)
 	}
-        concurrentMap.Lock()
+        //concurrentMap.Lock()
         currentConfig.PID = cmd.Process.Pid
         currentConfig.CurrentPort = foundPort
         //TODO backup
-        b, err := json.Marshal(currentConfig)
-        if err != nil {
-            fmt.Println(err)
-        }
-        fmt.Println(string(b))
+        //b, err := json.Marshal(currentConfig)
+        //if err != nil {
+        //    fmt.Println(err)
+        //}
+        //err1 := ioutil.WriteFile("bakup.back", b, 0644)
+        //if err1 != nil {
+        //    panic(err1)
+        //}
+
+        //fmt.Println(string(b))
         //
-        concurrentMap.Unlock()
+        //concurrentMap.Unlock()
         wg.Done()
 
 }
@@ -133,6 +138,7 @@ func getFreePort() string {
 	return strconv.Itoa(portNum)
 }
 
+// Builds the list of used ports
 func buildPorts(ports []string) {
 	min, minerr := strconv.Atoi(ports[0])
 	max, maxerr := strconv.Atoi(ports[1])
@@ -151,7 +157,7 @@ func buildPorts(ports []string) {
 	concurrentMap.Unlock()
 }
 
-//
+// Gets the file as a []byte that will be used to load
 func getLoadFile(loadingFile string) []byte {
 	fileBytes, err := ioutil.ReadFile(loadingFile)
 	if err != nil {
@@ -171,12 +177,23 @@ func getSupervisionList(loadedFile []byte) []configs {
 	return configList
 }
 
-func loadBackup(dumpfile string){
-    //TODO load the file
-    // rebuild map
-    // check PIDS 
-    // modify portslist
-}
+//func loadBackup(dumpfile string) []configs {
+//    //TODO load the file
+//    // rebuild map
+//    // check PIDS 
+//    // modify portslist
+//	//var configList []configs
+//        //concurrentMap.Lock()
+//        var configList []configs
+//        loadedFile := getLoadFile(dumpfile)
+//	err := json.Unmarshal(loadedFile, &configList)
+//        //concurrentMap.Unlock()
+//	if err != nil {
+//		log.Critical(err)
+//                fmt.Println(err)
+//	}
+//        return configList
+//}
 
 // Main function of the supervisor
 func main() {
@@ -215,7 +232,8 @@ func main() {
 	buildPorts(portsList)
 	loadedString := getLoadFile(loadingFile)
 	supervisionList := getSupervisionList(loadedString)
-	//fmt.Println(supervisionList)
+        //fmt.Println("supervision list")
+        //fmt.Println(supervisionList)
 
         //TODO remove this?
 	filename := os.Args[0]
@@ -224,10 +242,20 @@ func main() {
 	if err != nil {
 		log.Critical(err)
 	}
-	fmt.Println(thepath)
+	//fmt.Println(thepath)
         //
 
-        //loadBackup(dumpfile)
+        loadedFile := getLoadFile(dumpfile)
+        //additionalBackup := loadBackup(dumpfile)
+        additionalBackup := getSupervisionList(loadedFile)
+        //fmt.Println("additional")
+        //fmt.Println(additionalBackup)
+        //fmt.Println("DONE")
+        totalSize := (len(additionalBackup) + len(supervisionList))
+        newList := make([]configs, len(supervisionList), totalSize)
+        copy(newList, supervisionList)
+        supervisionList = newList
+        supervisionList = append(supervisionList, additionalBackup...)
         wg := new(sync.WaitGroup)
         amount := len(supervisionList)
         wg.Add(amount)
@@ -239,7 +267,22 @@ func main() {
         wg.Wait()
         fmt.Println("Done! Loaded the servers")
 	//strings.Replace on {{port}}
-        fmt.Println("sleep done")
-        //for {
-        //}
+        //fmt.Println("sleep done")
+        //fmt.Println("supervision list")
+        //fmt.Println(supervisionList)
+        //
+//
+//        b, err := json.Marshal(supervisionList)
+//        if err != nil {
+//            fmt.Println(err)
+//        }
+//        err1 := ioutil.WriteFile("bakup.back", b, 0644)
+//        if err1 != nil {
+//            panic(err1)
+//        }
+//
+//        fmt.Println(string(b))
+        //
+        for {
+        }
 }
