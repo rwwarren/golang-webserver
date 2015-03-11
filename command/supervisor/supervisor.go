@@ -28,7 +28,7 @@ import (
 	"strconv"
 	//"strings"
 	"sync"
-	"time"
+	//"time"
 	"io/ioutil"
 	"path/filepath"
         //"runtime"
@@ -51,6 +51,8 @@ type configs struct {
 	Command []string
 	Output  string
 	Error   string
+        PID     int
+        CurrentPort string
         //TODO PID, PORT
         //TODO output all map to JSON then reload it
 }
@@ -68,20 +70,17 @@ func init() {
 }
 
 //
-func supervise(currentConfig configs, thepath string) {
-//func supervise(currentConfig configs, output chan string) {
+func supervise(currentConfig configs, thepath string, wg *sync.WaitGroup) {
 	//supervise the server
-	//fmt.Println("get here")
-	//log.Info("get here")
-	//size := len(currentConfig.Command)
 	size := len(currentConfig.Command) - 1
 	args := make([]string, size)
 	//fmt.Println(size)
+        var foundPort string
 	for i := 0; i < size; i++ {
 		//currentCommand := currentConfig.Command[i]
 		currentCommand := currentConfig.Command[i + 1]
 		if strings.Contains(currentCommand, "{{port}}") {
-			foundPort := getFreePort()
+			foundPort = getFreePort()
                         fmt.Printf("FOUND PORT: %s\n", foundPort)
 			currentCommand = strings.Replace(currentCommand, "{{port}}", foundPort, 1)
 		}
@@ -126,6 +125,11 @@ func supervise(currentConfig configs, thepath string) {
 	if err != nil {
 		log.Critical(err)
 	}
+        concurrentMap.Lock()
+        currentConfig.PID = cmd.Process.Pid
+        currentConfig.CurrentPort = foundPort
+        concurrentMap.Unlock()
+        wg.Done()
 	//fmt.Printf("in all caps: %q\n", out.String())
         //output <- out.String()
 //        for {
@@ -249,6 +253,9 @@ func main() {
 	fmt.Println(thepath)
         //
 
+        wg := new(sync.WaitGroup)
+        amount := len(supervisionList)
+        wg.Add(amount)
         //ch := make(chan string)
 	for _, val := range supervisionList {
 		//for key, val := range supervisionList {
@@ -256,7 +263,7 @@ func main() {
 		fmt.Println(val)
 		//go supervise(val, ch)
 		//supervise(val, ch)
-		go supervise(val, thepath)
+		go supervise(val, thepath, wg)
                 //go test("/bin/ls")
                 //test("/bin/ls")
 //		supervise(val, thepath)
@@ -270,8 +277,11 @@ func main() {
         //     fmt.Printf("%v ", i)
         //}
 
+        fmt.Println("Loading the servers")
+        wg.Wait()
+        fmt.Println("Done! Loaded the servers")
 	//strings.Replace on {{port}}
-        time.Sleep(5 * time.Second)
+        //time.Sleep(5 * time.Second)
         fmt.Println("sleep done")
         //for {
         //}
