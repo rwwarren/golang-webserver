@@ -17,7 +17,7 @@ import (
 	"os/exec"
 	"strings"
 	//test
-	"bytes"
+//	"bytes"
 	//
 	"encoding/json"
 	"flag"
@@ -28,9 +28,10 @@ import (
 	"strconv"
 	//"strings"
 	"sync"
-	//"time"
+	"time"
 	"io/ioutil"
 	"path/filepath"
+        //"runtime"
 )
 
 // Stores the port information
@@ -50,6 +51,8 @@ type configs struct {
 	Command []string
 	Output  string
 	Error   string
+        //TODO PID, PORT
+        //TODO output all map to JSON then reload it
 }
 
 // Initalizes the
@@ -64,37 +67,70 @@ func init() {
 	}{portMap: make([]Ports, 9999)}
 }
 
-func supervise(currentConfig configs) {
+//
+func supervise(currentConfig configs, thepath string) {
+//func supervise(currentConfig configs, output chan string) {
 	//supervise the server
-	fmt.Println("get here")
-	log.Info("get here")
+	//fmt.Println("get here")
+	//log.Info("get here")
+	//size := len(currentConfig.Command)
 	size := len(currentConfig.Command) - 1
 	args := make([]string, size)
-	fmt.Println(size)
+	//fmt.Println(size)
 	for i := 0; i < size; i++ {
-		currentCommand := currentConfig.Command[i+1]
+		//currentCommand := currentConfig.Command[i]
+		currentCommand := currentConfig.Command[i + 1]
 		if strings.Contains(currentCommand, "{{port}}") {
 			foundPort := getFreePort()
+                        fmt.Printf("FOUND PORT: %s\n", foundPort)
 			currentCommand = strings.Replace(currentCommand, "{{port}}", foundPort, 1)
 		}
 		fmt.Printf("at this sport: %s\n", currentCommand)
 		args[i] = currentCommand
 	}
-	cmd := exec.Command(currentConfig.Command[0], args...)
+        //attr := new(os.ProcAttr)
+        //cmd, err := os.StartProcess(currentConfig.Command[0], args, attr)
+        //if err != nil {
+        //  log.Critical(err)
+        //}
+        //fmt.Printf("cmd!!! %v \n", cmd)
+        program := fmt.Sprintf("%s", currentConfig.Command[0])
+        //program := fmt.Sprintf("%s/%s", thepath, currentConfig.Command[0])
+	cmd := exec.Command(program, args...)
+        outfile, outerr := os.Create(currentConfig.Output)
+        //outfile, outerr := os.Create("./out.txt")
+        if outerr != nil {
+            panic(outerr)
+        }
+        defer outfile.Close()
+        errfile, errerr := os.Create(currentConfig.Error)
+        //outfile, outerr := os.Create("./out.txt")
+        if errerr != nil {
+            panic(outerr)
+        }
+        defer errfile.Close()
+        //TODO send output to a command line output
+//        cmd.Stdout = os.Stdout
+        cmd.Stdout = outfile
+        cmd.Stderr = errfile
 	fmt.Println(cmd)
 	//cmd := exec.Command(currentConfig.Command[0], currentConfig.Command[1:size]...)
 	//testing
-	var out bytes.Buffer
-	cmd.Stdout = &out
+	//var out bytes.Buffer
+	//cmd.Stdout = &out
 	//
 	err := cmd.Start()
 	//err := cmd.Run()
-	fmt.Println(cmd.Process.Pid)
+	fmt.Printf("ProcessID: %v\n", cmd.Process.Pid)
+	//fmt.Println(cmd.Process.Pid)
 	if err != nil {
 		log.Critical(err)
 	}
-	fmt.Printf("in all caps: %q\n", out.String())
-        cmd.Wait()
+	//fmt.Printf("in all caps: %q\n", out.String())
+        //output <- out.String()
+//        for {
+//        }
+        //cmd.Wait()
 
 }
 
@@ -103,13 +139,18 @@ func getFreePort() string {
 	var portNum int
 	for i := range concurrentMap.portMap {
 		if !concurrentMap.portMap[i].IsUsed {
-			fmt.Printf("THIS LOCATION %v \n", i)
+			//fmt.Printf("THIS LOCATION %v \n", i)
 			concurrentMap.portMap[i].IsUsed = true
 			portNum = concurrentMap.portMap[i].PortNumber
+	                concurrentMap.Unlock()
+                        fmt.Printf("portnum %v . port string %s \n", portNum, strconv.Itoa(portNum))
+                        //return string(portNum)
+                        return strconv.Itoa(portNum)
 		}
 	}
 	concurrentMap.Unlock()
-	return string(portNum)
+	return strconv.Itoa(portNum)
+	//return string(portNum)
 }
 
 func buildPorts(ports []string) {
@@ -166,6 +207,7 @@ func main() {
 	logFile := flag.String("log", "logConfig", "This is the logger configuration file")
 	portRange := flag.String("port-range", "8080-9090", "This is the port range")
 	dumpLoc := flag.String("dumpfile", "backup.bak", "This is the dumpfile")
+        //TODO below change to pipe in from command line
 	loadFile := flag.String("loadfile", "config.json", "This is the dumpfile")
 	checkout := flag.Int("checkpoint-interval", 2, "This is the checkpoint interval")
 	flag.Parse()
@@ -207,12 +249,30 @@ func main() {
 	fmt.Println(thepath)
         //
 
+        //ch := make(chan string)
 	for _, val := range supervisionList {
 		//for key, val := range supervisionList {
 		//fmt.Println(key)
-		//fmt.Println(val)
-		//go supervise(val)
-		supervise(val)
+		fmt.Println(val)
+		//go supervise(val, ch)
+		//supervise(val, ch)
+		go supervise(val, thepath)
+                //go test("/bin/ls")
+                //test("/bin/ls")
+//		supervise(val, thepath)
+		//supervise(val)
 	}
+        //for {
+        //  //fmt.Print(runtime.NumGoroutine())
+
+        //}
+        //for i := range ch {
+        //     fmt.Printf("%v ", i)
+        //}
+
 	//strings.Replace on {{port}}
+        time.Sleep(5 * time.Second)
+        fmt.Println("sleep done")
+        //for {
+        //}
 }

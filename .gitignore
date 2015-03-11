@@ -12,3 +12,5 @@ test/*
 *.tar
 look\ at\ for\ shell\ help.sh
 
+*.err
+*.out
