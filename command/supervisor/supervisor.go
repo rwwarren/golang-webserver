@@ -37,8 +37,9 @@ import (
 var concurrentMap struct {
 	sync.RWMutex
 	portMap []Ports
+        configList []configs
 	//TODO use size for something
-	size int
+	//size int
 }
 
 //
@@ -63,8 +64,10 @@ func init() {
 	concurrentMap = struct {
 		sync.RWMutex
 		portMap []Ports
-		size    int
-	}{portMap: make([]Ports, 9999)}
+                configList []configs
+		//size    int
+	}{}
+	//}{portMap: make([]Ports, 9999)}
 }
 
 //
@@ -152,8 +155,10 @@ func launch(currentConfig *configs) {
 	if err != nil {
 		log.Critical(err)
 	}
+        concurrentMap.Lock()
 	currentConfig.PID = cmd.Process.Pid
 	currentConfig.CurrentPort = foundPort
+        concurrentMap.Unlock()
 }
 
 //
@@ -200,10 +205,12 @@ func buildPorts(ports []string) {
 	}
 	concurrentMap.Lock()
 	total := (max - min)
-	for i := 0; i <= total; i++ {
+        concurrentMap.portMap = make([]Ports, total)
+	for i := 0; i < total; i++ {
 		concurrentMap.portMap[i] = Ports{(min + i), false}
+                //concurrentMap.portMap[i] = Ports{(min + i), false}
 	}
-	concurrentMap.size = total
+	//concurrentMap.size = total
 	concurrentMap.Unlock()
 }
 
@@ -229,13 +236,26 @@ func getSupervisionList(loadedFile []byte) []configs {
 
 //
 func writeBackup(backupFile string) {
-    backup := &configs{}
+    concurrentMap.RLock()
+    backup := &concurrentMap.configList
+    concurrentMap.RUnlock()
     b, err := json.Marshal(backup)
     if err != nil {
-        fmt.Println(err)
+        log.Critical(err)
         return
     }
-    fmt.Println(string(b))
+    file, err := os.Create(backupFile)
+    if err != nil {
+        log.Critical(err)
+        return
+    }
+    defer file.Close()
+    written, werr := file.Write(b)
+    if werr != nil {
+        log.Critical(werr)
+        return
+    }
+    log.Infof("Wrote to file: %v", written)
 
 }
 
@@ -306,10 +326,19 @@ func main() {
 	copy(newList, supervisionList)
 	supervisionList = newList
 	supervisionList = append(supervisionList, additionalBackup...)
-	for key, _ := range supervisionList {
-		go supervise(&supervisionList[key], checkoutInterval)
+        //
+        concurrentMap.Lock()
+        concurrentMap.configList = make([]configs, totalSize)
+        concurrentMap.configList = supervisionList
+        //concurrentMap.Unlock()
+        //
+	for key, _ := range concurrentMap.configList {
+	//for key, _ := range supervisionList {
+		go supervise(&concurrentMap.configList[key], checkoutInterval)
+		//go supervise(&supervisionList[key], checkoutInterval)
 		//go supervise(&supervisionList[key], thepath, checkoutInterval)
 	}
+        concurrentMap.Unlock()
 	log.Info("Loading the servers")
 	go monitor(dumpfile, checkoutInterval)
 	signalChan := make(chan os.Signal, 1)

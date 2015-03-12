@@ -10,3 +10,6 @@ DONE - update timeserver -v to 7
 TODO: BACKUP fix
 TODO: remove "thepath"
 TODO: clean up
+TODO backup mutex?
+commenting
+pipe in json input
