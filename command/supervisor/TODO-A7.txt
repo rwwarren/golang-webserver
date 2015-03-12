@@ -4,3 +4,9 @@
 - josn config CLI
 - actual supervision
 DONE - update timeserver -v to 7
+
+
+
+TODO: BACKUP fix
+TODO: remove "thepath"
+TODO: clean up

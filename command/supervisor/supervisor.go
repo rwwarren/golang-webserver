@@ -22,13 +22,15 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
+	//"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
+	//"syscall"
 	"time"
-	//"os/signal"
+	"os/signal"
+        "io"
+        "bytes"
 )
 
 // Stores the port information
@@ -85,24 +87,26 @@ func checkAlive(pid int) bool {
 	if pid == 0 {
 		return false
 	}
-	process, _ := os.FindProcess(pid)
-	//TODO get process STAT
-	newerr := process.Signal(syscall.Signal(0))
-	fmt.Println("newerr")
-	fmt.Println(newerr)
-	myPid := fmt.Sprintf("%v", pid)
-	cmd, err := exec.Command("/bin/ps", "axo pid,stat | grep", myPid).Output()
-	if err != nil {
-		fmt.Printf("exit status???? %s\n", err)
-	}
-	fmt.Printf("CMD output %s \n", cmd)
-	n := len(cmd)
-	command := string(cmd[:n])
+      c1 := exec.Command("/bin/ps", "axo pid,stat")
+    myPid := fmt.Sprintf("%v", pid)
+    c2 := exec.Command("grep", myPid)
+    r, w := io.Pipe()
+    c1.Stdout = w
+    c2.Stdin = r
+    var cmd bytes.Buffer
+    c2.Stdout = &cmd
+    c1.Start()
+    c2.Start()
+    c1.Wait()
+    w.Close()
+    c2.Wait()
+        command := cmd.String()
 	return !strings.Contains(command, "Z")
 }
 
 //
-func launch(currentConfig *configs, thepath string) {
+func launch(currentConfig *configs) {
+//func launch(currentConfig *configs, thepath string) {
 	size := len(currentConfig.Command) - 1
 	args := make([]string, size)
 	var foundPort string
@@ -131,20 +135,20 @@ func launch(currentConfig *configs, thepath string) {
 	cmd := exec.Command(program, args...)
 	outfile, outerr := os.Create(currentConfig.Output)
 	if outerr != nil {
-		panic(outerr)
+		log.Critical(outerr)
 	}
 	defer outfile.Close()
 	errfile, errerr := os.Create(currentConfig.Error)
 	if errerr != nil {
-		panic(errerr)
+		log.Critical(errerr)
 	}
 	defer errfile.Close()
 	//TODO send output to a command line output
 	cmd.Stdout = outfile
 	cmd.Stderr = errfile
-	fmt.Println(cmd)
+	log.Infof("Command exec info: %v", cmd)
 	err := cmd.Start()
-	fmt.Printf("ProcessID: %v\n", cmd.Process.Pid)
+	log.Infof("ProcessID: %v", cmd.Process.Pid)
 	if err != nil {
 		log.Critical(err)
 	}
@@ -153,14 +157,16 @@ func launch(currentConfig *configs, thepath string) {
 }
 
 //
-func supervise(currentConfig *configs, thepath string, checkoutInterval int) {
+func supervise(currentConfig *configs, checkoutInterval int) {
+//func supervise(currentConfig *configs, thepath string, checkoutInterval int) {
 	for {
 		alive := checkAlive(currentConfig.PID)
-		fmt.Printf("ProcessID Checking: %v\n", currentConfig.PID)
+		log.Infof("ProcessID Checking: %v", currentConfig.PID)
 		if alive {
 			time.Sleep(time.Duration(checkoutInterval) * time.Second)
 		} else {
-			launch(currentConfig, thepath)
+			launch(currentConfig)
+			//launch(currentConfig, thepath)
 		}
 	}
 }
@@ -221,6 +227,30 @@ func getSupervisionList(loadedFile []byte) []configs {
 	return configList
 }
 
+//
+func writeBackup(backupFile string) {
+    backup := &configs{}
+    b, err := json.Marshal(backup)
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+    fmt.Println(string(b))
+
+}
+
+//
+func monitor(backupFile string, checkpointInterval int){
+  for {
+    time.Sleep(time.Duration(checkpointInterval) * time.Second)
+    writeBackup(backupFile)
+    log.Info("To quit: Press Q + ENTER")
+    fmt.Println("To quit: Press Q + ENTER")
+    log.Info("To kill all process group: Press COMMAND + C")
+    fmt.Println("To kill all process group: Press COMMAND + C")
+  }
+}
+
 // Main function of the supervisor
 func main() {
 	defer log.Flush()
@@ -258,16 +288,14 @@ func main() {
 	buildPorts(portsList)
 	loadedString := getLoadFile(loadingFile)
 	supervisionList := getSupervisionList(loadedString)
-	//fmt.Println("supervision list")
-	//fmt.Println(supervisionList)
 
 	//TODO remove this?
-	filename := os.Args[0]
-	filedirectory := filepath.Dir(filename)
-	thepath, err := filepath.Abs(filedirectory)
-	if err != nil {
-		log.Critical(err)
-	}
+	//filename := os.Args[0]
+	//filedirectory := filepath.Dir(filename)
+	//thepath, err := filepath.Abs(filedirectory)
+	//if err != nil {
+	//	log.Critical(err)
+	//}
 	loadedFile := getLoadFile(dumpfile)
 	additionalBackup := getSupervisionList(loadedFile)
 	for key, _ := range additionalBackup {
@@ -279,30 +307,26 @@ func main() {
 	supervisionList = newList
 	supervisionList = append(supervisionList, additionalBackup...)
 	for key, _ := range supervisionList {
-		go supervise(&supervisionList[key], thepath, checkoutInterval)
+		go supervise(&supervisionList[key], checkoutInterval)
+		//go supervise(&supervisionList[key], thepath, checkoutInterval)
 	}
 	log.Info("Loading the servers")
-	//go monitor()
-	//TODO channel to keep servers alive
-	//signalChan := make(chan os.Signal, 1)
-	//signal.Notify(signalChan, os.Interrupt)
-	//go func() {
-	//	for _ = range signalChan {
-	//		fmt.Println("\nReceived shutdown command. Cleaning up...\n")
-	//		//cleanup()
-	//		os.Exit(0)
-	//		//os.Exit(1)
-	//	}
-	//}()
-	//TODO remove wait group??? or only have it run the first time
-	//wg.Wait()
+	go monitor(dumpfile, checkoutInterval)
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt)
+	go func() {
+		for _ = range signalChan {
+			fmt.Println("\nReceived shutdown command. Cleaning up...\n")
+                        //writeBackup(dumpfile)
+			os.Exit(0)
+		}
+	}()
 	log.Info("Done! Loaded the servers")
-	var i int
-	//TODO use this to quit
-	for i != 1 {
-		fmt.Scan(&i)
-		fmt.Println("read number", i, "from stdin")
-		//cleanup
+	var input string
+	for input != "Q" {
+		fmt.Scan(&input)
+		fmt.Println("Qutting based on command from stdin: ", input)
+        //              writeBackup(backupFile)
 	}
 	os.Exit(0)
 }
