@@ -63,16 +63,28 @@ func init() {
 	}{portMap: make([]Ports, 9999)}
 }
 
+//func killBackups(killProcesses []configs) []configs{
+//func killBackups(killProcesses *configs) {
+func killBackups(killProcesses *configs) {
+//func killBackups(killProcesses *[]configs) {
+  //for _, val := range *killProcesses {
+  //for _, val := range killProcesses {
+      if killProcesses.PID != 0{
+        killProcess(killProcesses.PID)
+        //killProcess(val.PID)
+        killProcesses.PID = 0
+        //val.PID = 0
+      }
+      //*val.PID = 0
+  //}
+  //return killProcesses
 
-//func monitor(){
-//  for {
-//  }
-//}
+}
 
 func killProcess(pid int){
-
   process, _ := os.FindProcess(pid)
   process.Kill()
+  process.Wait()
 }
 
 func checkAlive(pid int) bool {
@@ -99,7 +111,7 @@ func checkAlive(pid int) bool {
     myPid := fmt.Sprintf("%v", pid)
     cmd, err := exec.Command("/bin/ps", "axo pid,stat | grep", myPid).Output()
     if err != nil {
-      fmt.Printf("exit status???? %s",err)
+      fmt.Printf("exit status???? %s\n",err)
       //return false
     }
     fmt.Printf("CMD output %s \n",cmd)
@@ -312,6 +324,15 @@ func main() {
 
         //TODO Kill all the processes
         additionalBackup := getSupervisionList(loadedFile)
+        for key, _ := range additionalBackup {
+        //for _, val := range additionalBackup {
+          killBackups(&additionalBackup[key])
+        }
+        //killBackups(&additionalBackup)
+        //additionalBackup = killBackups(&additionalBackup)
+        //fmt.Println(additionalBackup)
+        //time.Sleep(5 * time.Second)
+        //killBackups(&additionalBackup)
         //killProcesses
         //TODO Kill all the processes
 
@@ -323,6 +344,10 @@ func main() {
         copy(newList, supervisionList)
         supervisionList = newList
         supervisionList = append(supervisionList, additionalBackup...)
+        
+        //fmt.Println(supervisionList)
+        //time.Sleep(5 * time.Second)
+        
         wg := new(sync.WaitGroup)
         amount := len(supervisionList)
         //wg.Add(amount + 1)
