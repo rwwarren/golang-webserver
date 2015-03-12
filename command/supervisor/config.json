@@ -1,11 +1,11 @@
 
-[{"command": ["../authserver/authserver", "--log=etc/auth.xml"],
+[{"command": ["../authserver/authserver", "--log=logConfig"],
    "output":"out/auth.out", "error": "out/auth.err"},
- {"command": ["../timeserver/timeserver", "--log=etc/log-01.xml", "--port={{port}}",
+ {"command": ["../timeserver/timeserver", "--log=logConfig", "--port={{port}}",
               "--max-inflight=80",
-              "--avg-response-ms=500", "--response-deviation-ms=300"],
+              "--avg-response-ms=500", "--deviation-ms=300"],
   "output": "out/timeserver-01.out", "error": "out/timeserver-01.err"},
- {"command": ["../timeserver/timeserver", "--log=etc/log-02.xml", "--port={{port}}",
+ {"command": ["../timeserver/timeserver", "--log=logConfig", "--port={{port}}",
               "--max-inflight=2",
-              "--avg-response-ms=20000", "--response-deviation-ms=1000"],
+              "--avg-response-ms=20000", "--deviation-ms=1000"],
   "output": "out/timeserver-02.out", "error": "out/timeserver-02.err"}]

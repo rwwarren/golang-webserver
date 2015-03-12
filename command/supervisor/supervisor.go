@@ -11,6 +11,9 @@
 // --checkpoint-interval interval between checking services
 // --dumpfile is a backup file of the servers that are being
 // monitored by the supervisor
+// To load in a config there are 3 options. Option 1 is to load
+// a file using the "--loadfile" flag. You can also use
+// './supervisor "MYARGS"' or finally './supervisor "$(<FILENAME)"'
 
 package main
 
@@ -263,9 +266,7 @@ func main() {
 	logFile := flag.String("log", "logConfig", "This is the logger configuration file")
 	portRange := flag.String("port-range", "8080-9090", "This is the port range")
 	dumpLoc := flag.String("dumpfile", "backup.bak", "This is the dumpfile")
-	//TODO below change to pipe in from command line
-	loadFile := flag.String("loadfile", "config.json", "This is the dumpfile")
-	//
+	loadFile := flag.String("loadfile", "", "This is the load file, but can be read in as os.Arg[1]")
 	checkout := flag.Int("checkpoint-interval", 2, "This is the checkpoint interval")
 	flag.Parse()
 	logFileName := fmt.Sprintf("etc/%s.xml", *logFile)
@@ -292,7 +293,12 @@ func main() {
 	log.Infof("checkpoint interval Flag: %v", checkoutInterval)
 	log.Infof("loading file Flag: %s", loadingFile)
 	buildPorts(portsList)
-	loadedString := getLoadFile(loadingFile)
+        var loadedString []byte
+        if len(loadingFile) > 0 {
+	  loadedString = getLoadFile(loadingFile)
+        } else if len(os.Args) > 1{
+          loadedString = []byte(os.Args[1])
+        }
 	supervisionList := getSupervisionList(loadedString)
 	loadedFile := getLoadFile(dumpfile)
 	additionalBackup := getSupervisionList(loadedFile)
@@ -300,6 +306,10 @@ func main() {
 		killBackups(&additionalBackup[key])
 	}
 	totalSize := (len(additionalBackup) + len(supervisionList))
+        if totalSize < 1 {
+          fmt.Println("Not actually monitoring any servers. Shutting down...")
+          os.Exit(1)
+        }
 	newList := make([]configs, len(supervisionList), totalSize)
 	copy(newList, supervisionList)
 	supervisionList = newList

@@ -11,6 +11,7 @@ test/*
 *.tar.gz
 *.tar
 look\ at\ for\ shell\ help.sh
+command/supervisor/backup.bak
 
 *.err
 *.out
