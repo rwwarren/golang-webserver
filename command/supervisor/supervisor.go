@@ -26,6 +26,9 @@ import (
 	"sync"
 	"io/ioutil"
 	"path/filepath"
+        "time"
+        "syscall"
+        //"os/signal"
 )
 
 // Stores the port information
@@ -60,11 +63,58 @@ func init() {
 	}{portMap: make([]Ports, 9999)}
 }
 
-//
-func supervise(currentConfig configs, thepath string, wg *sync.WaitGroup) {
-  //TODO check every x seconds, if there sleep
-  // else load server and update
-	//supervise the server
+
+//func monitor(){
+//  for {
+//  }
+//}
+
+func killProcess(pid int){
+
+  process, _ := os.FindProcess(pid)
+  process.Kill()
+}
+
+func checkAlive(pid int) bool {
+  //_, err := os.FindProcess(pid)
+  //process, err := os.FindProcess(pid)
+  if pid == 0 {
+    return false
+  }
+  process, _ := os.FindProcess(pid)
+  //fmt.Println("pid")
+  //fmt.Println(pid)
+  //fmt.Println("err")
+  //fmt.Println(err)
+  //fmt.Println("process")
+  //fmt.Println(process)
+  //process.Release()
+  //TODO get process STAT
+  newerr := process.Signal(syscall.Signal(0))
+  fmt.Println("newerr")
+  fmt.Println(newerr)
+  //if newerr == nil {
+  //  return true
+  //} else {
+    myPid := fmt.Sprintf("%v", pid)
+    cmd, err := exec.Command("/bin/ps", "axo pid,stat | grep", myPid).Output()
+    if err != nil {
+      fmt.Printf("exit status???? %s",err)
+      //return false
+    }
+    fmt.Printf("CMD output %s \n",cmd)
+    n := len(cmd)
+    command := string(cmd[:n])
+    //command := fmt.Sprintf("%v", cmd)
+    return !strings.Contains(command, "Z")
+    //return true
+    //ps axo pid,stat | grep pid
+  //}
+  //return err != nil
+  //return newerr == nil
+}
+
+func launch(currentConfig *configs, thepath string){
 	size := len(currentConfig.Command) - 1
 	args := make([]string, size)
         var foundPort string
@@ -74,11 +124,18 @@ func supervise(currentConfig configs, thepath string, wg *sync.WaitGroup) {
 			foundPort = getFreePort()
                         fmt.Printf("FOUND PORT: %s\n", foundPort)
 			currentCommand = strings.Replace(currentCommand, "{{port}}", foundPort, 1)
-		}
+		} else if strings.Contains(currentCommand, "--port=") {
+                  found := strings.SplitAfter(currentCommand, "--port=")
+                  foundPort = found[1]
+                  fmt.Printf("found da portz: %s \n", foundPort)
+                  //
+                }
 		fmt.Printf("at this sport: %s\n", currentCommand)
 		args[i] = currentCommand
 	}
         program := fmt.Sprintf("%s", currentConfig.Command[0])
+	//cmd := exec.Command("/bin/sh", currentConfig.Command...)
+	//cmd := exec.Command("/bin/sh", "C", args...)
 	cmd := exec.Command(program, args...)
         outfile, outerr := os.Create(currentConfig.Output)
         if outerr != nil {
@@ -87,7 +144,7 @@ func supervise(currentConfig configs, thepath string, wg *sync.WaitGroup) {
         defer outfile.Close()
         errfile, errerr := os.Create(currentConfig.Error)
         if errerr != nil {
-            panic(outerr)
+            panic(errerr)
         }
         defer errfile.Close()
         //TODO send output to a command line output
@@ -95,29 +152,52 @@ func supervise(currentConfig configs, thepath string, wg *sync.WaitGroup) {
         cmd.Stderr = errfile
 	fmt.Println(cmd)
 	err := cmd.Start()
-	//err := cmd.Run()
 	fmt.Printf("ProcessID: %v\n", cmd.Process.Pid)
-	//fmt.Println(cmd.Process.Pid)
+//        cmd.Process.Release()
 	if err != nil {
 		log.Critical(err)
 	}
-        //concurrentMap.Lock()
         currentConfig.PID = cmd.Process.Pid
         currentConfig.CurrentPort = foundPort
-        //TODO backup
-        //b, err := json.Marshal(currentConfig)
-        //if err != nil {
-        //    fmt.Println(err)
-        //}
-        //err1 := ioutil.WriteFile("bakup.back", b, 0644)
-        //if err1 != nil {
-        //    panic(err1)
-        //}
+        //fmt.Printf("ProcessID: %v\n", currentConfig.PID)
 
-        //fmt.Println(string(b))
-        //
-        //concurrentMap.Unlock()
-        wg.Done()
+}
+
+//
+func supervise(currentConfig *configs, thepath string, checkoutInterval int) {
+//func supervise(currentConfig configs, thepath string, checkoutInterval int, wg *sync.WaitGroup) {
+  //TODO check every x seconds, if there sleep
+  // else load server and update
+	//supervise the server
+        //alive := false //:= checkAlive(currentConfig.PID)
+            //alive := false
+            //alive := checkAlive(currentConfig.PID)
+        for {
+            //alive := false //:= checkAlive(currentConfig.PID)
+            //alive := checkAlive(234632487263487)
+            //killProcess(currentConfig.PID)
+            alive := checkAlive(currentConfig.PID)
+            //alive := true
+
+            fmt.Printf("ProcessID Checking: %v\n", currentConfig.PID)
+            //test := checkAlive(currentConfig.PID)
+            fmt.Printf("is it alive??? %v \n", alive)
+            //myalive := checkAlive(currentConfig.PID)
+            //fmt.Printf("is it alive??? %v \n", myalive)
+            if alive {
+
+              time.Sleep(time.Duration(checkoutInterval) * time.Second)
+            } else {
+                launch(currentConfig, thepath)
+                //alive = checkAlive(currentConfig.PID)
+                //alive = true
+                //wg.Done()
+                //alive = true
+            }
+            //wg.Done()
+              //time.Sleep(time.Duration(checkoutInterval) * time.Second)
+        }
+        //wg.Done()
 
 }
 
@@ -177,24 +257,6 @@ func getSupervisionList(loadedFile []byte) []configs {
 	return configList
 }
 
-//func loadBackup(dumpfile string) []configs {
-//    //TODO load the file
-//    // rebuild map
-//    // check PIDS 
-//    // modify portslist
-//	//var configList []configs
-//        //concurrentMap.Lock()
-//        var configList []configs
-//        loadedFile := getLoadFile(dumpfile)
-//	err := json.Unmarshal(loadedFile, &configList)
-//        //concurrentMap.Unlock()
-//	if err != nil {
-//		log.Critical(err)
-//                fmt.Println(err)
-//	}
-//        return configList
-//}
-
 // Main function of the supervisor
 func main() {
 	defer log.Flush()
@@ -247,7 +309,12 @@ func main() {
 
         loadedFile := getLoadFile(dumpfile)
         //additionalBackup := loadBackup(dumpfile)
+
+        //TODO Kill all the processes
         additionalBackup := getSupervisionList(loadedFile)
+        //killProcesses
+        //TODO Kill all the processes
+
         //fmt.Println("additional")
         //fmt.Println(additionalBackup)
         //fmt.Println("DONE")
@@ -258,14 +325,44 @@ func main() {
         supervisionList = append(supervisionList, additionalBackup...)
         wg := new(sync.WaitGroup)
         amount := len(supervisionList)
+        //wg.Add(amount + 1)
         wg.Add(amount)
-	for _, val := range supervisionList {
+	for key, val := range supervisionList {
+	//for _, val := range supervisionList {
+                fmt.Println("this one")
 		fmt.Println(val)
-		go supervise(val, thepath, wg)
+                //cmd.Run()
+		go supervise(&supervisionList[key], thepath, checkoutInterval)
+		//go supervise(&val, thepath, checkoutInterval)
+
+		//go supervise(val, thepath, checkoutInterval)
+		//go supervise(*val, thepath, checkoutInterval)
+		//go supervise(val, thepath, checkoutInterval, wg)
 	}
         fmt.Println("Loading the servers")
-        wg.Wait()
+        //go monitor()
+        //TODO channel to keep servers alive
+	//signalChan := make(chan os.Signal, 1)
+	//signal.Notify(signalChan, os.Interrupt)
+	//go func() {
+	//	for _ = range signalChan {
+	//		fmt.Println("\nReceived shutdown command. Cleaning up...\n")
+	//		//cleanup()
+	//		os.Exit(0)
+	//		//os.Exit(1)
+	//	}
+	//}()
+        //TODO remove wait group??? or only have it run the first time
+        //wg.Wait()
         fmt.Println("Done! Loaded the servers")
+        var i int
+        //TODO use this to quit
+        for i != 1 {
+              fmt.Scan(&i)
+              fmt.Println("read number", i, "from stdin")
+              //cleanup
+        }
+        os.Exit(0)
 	//strings.Replace on {{port}}
         //fmt.Println("sleep done")
         //fmt.Println("supervision list")
@@ -283,6 +380,6 @@ func main() {
 //
 //        fmt.Println(string(b))
         //
-        for {
-        }
+        //for {
+        //}
 }
