@@ -22,41 +22,35 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	//"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
-	//"syscall"
 	"time"
 	"os/signal"
         "io"
         "bytes"
 )
 
-// Stores the port information
+// Stores the port supervised server information
 var concurrentMap struct {
 	sync.RWMutex
 	portMap []Ports
         configList []configs
-	//TODO use size for something
-	//size int
 }
 
-//
+// Port information for the supervisor
 type Ports struct {
 	PortNumber int
 	IsUsed     bool
 }
 
-//
+// Server configuration struct
 type configs struct {
 	Command     []string
 	Output      string
 	Error       string
 	PID         int
 	CurrentPort string
-	//TODO PID, PORT
-	//TODO output all map to JSON then reload it
 }
 
 // Initalizes the concurrent map with the port list
@@ -65,12 +59,10 @@ func init() {
 		sync.RWMutex
 		portMap []Ports
                 configList []configs
-		//size    int
 	}{}
-	//}{portMap: make([]Ports, 9999)}
 }
 
-//
+// Helps kill processes based on the pid
 func killBackups(killProcesses *configs) {
 	if killProcesses.PID != 0 {
 		killProcess(killProcesses.PID)
@@ -78,14 +70,14 @@ func killBackups(killProcesses *configs) {
 	}
 }
 
-//
+// Kills he process based on the pid
 func killProcess(pid int) {
 	process, _ := os.FindProcess(pid)
 	process.Kill()
 	process.Wait()
 }
 
-//
+// Checks if the process is alive
 func checkAlive(pid int) bool {
 	if pid == 0 {
 		return false
@@ -107,9 +99,8 @@ func checkAlive(pid int) bool {
 	return !strings.Contains(command, "Z")
 }
 
-//
+// Launches the service and stores important information
 func launch(currentConfig *configs) {
-//func launch(currentConfig *configs, thepath string) {
 	size := len(currentConfig.Command) - 1
 	args := make([]string, size)
 	var foundPort string
@@ -146,7 +137,6 @@ func launch(currentConfig *configs) {
 		log.Critical(errerr)
 	}
 	defer errfile.Close()
-	//TODO send output to a command line output
 	cmd.Stdout = outfile
 	cmd.Stderr = errfile
 	log.Infof("Command exec info: %v", cmd)
@@ -161,9 +151,8 @@ func launch(currentConfig *configs) {
         concurrentMap.Unlock()
 }
 
-//
+// Watches over the server, checking it is up every checkpoint interval
 func supervise(currentConfig *configs, checkoutInterval int) {
-//func supervise(currentConfig *configs, thepath string, checkoutInterval int) {
 	for {
 		alive := checkAlive(currentConfig.PID)
 		log.Infof("ProcessID Checking: %v", currentConfig.PID)
@@ -171,7 +160,6 @@ func supervise(currentConfig *configs, checkoutInterval int) {
 			time.Sleep(time.Duration(checkoutInterval) * time.Second)
 		} else {
 			launch(currentConfig)
-			//launch(currentConfig, thepath)
 		}
 	}
 }
@@ -208,9 +196,7 @@ func buildPorts(ports []string) {
         concurrentMap.portMap = make([]Ports, total)
 	for i := 0; i < total; i++ {
 		concurrentMap.portMap[i] = Ports{(min + i), false}
-                //concurrentMap.portMap[i] = Ports{(min + i), false}
 	}
-	//concurrentMap.size = total
 	concurrentMap.Unlock()
 }
 
@@ -219,7 +205,8 @@ func getLoadFile(loadingFile string) []byte {
 	fileBytes, err := ioutil.ReadFile(loadingFile)
 	if err != nil {
 		log.Criticalf("Failed: %s", err)
-		os.Exit(1)
+                return nil
+		//os.Exit(1)
 	}
 	return fileBytes
 }
@@ -234,7 +221,7 @@ func getSupervisionList(loadedFile []byte) []configs {
 	return configList
 }
 
-//
+// Writes the config list to a file
 func writeBackup(backupFile string) {
     concurrentMap.RLock()
     backup := &concurrentMap.configList
@@ -256,10 +243,9 @@ func writeBackup(backupFile string) {
         return
     }
     log.Infof("Wrote to file: %v", written)
-
 }
 
-//
+// Writes the backup every checkpoint interval
 func monitor(backupFile string, checkpointInterval int){
   for {
     time.Sleep(time.Duration(checkpointInterval) * time.Second)
@@ -308,14 +294,6 @@ func main() {
 	buildPorts(portsList)
 	loadedString := getLoadFile(loadingFile)
 	supervisionList := getSupervisionList(loadedString)
-
-	//TODO remove this?
-	//filename := os.Args[0]
-	//filedirectory := filepath.Dir(filename)
-	//thepath, err := filepath.Abs(filedirectory)
-	//if err != nil {
-	//	log.Critical(err)
-	//}
 	loadedFile := getLoadFile(dumpfile)
 	additionalBackup := getSupervisionList(loadedFile)
 	for key, _ := range additionalBackup {
@@ -326,17 +304,11 @@ func main() {
 	copy(newList, supervisionList)
 	supervisionList = newList
 	supervisionList = append(supervisionList, additionalBackup...)
-        //
         concurrentMap.Lock()
         concurrentMap.configList = make([]configs, totalSize)
         concurrentMap.configList = supervisionList
-        //concurrentMap.Unlock()
-        //
 	for key, _ := range concurrentMap.configList {
-	//for key, _ := range supervisionList {
 		go supervise(&concurrentMap.configList[key], checkoutInterval)
-		//go supervise(&supervisionList[key], checkoutInterval)
-		//go supervise(&supervisionList[key], thepath, checkoutInterval)
 	}
         concurrentMap.Unlock()
 	log.Info("Loading the servers")
@@ -346,7 +318,7 @@ func main() {
 	go func() {
 		for _ = range signalChan {
 			fmt.Println("\nReceived shutdown command. Cleaning up...\n")
-                        //writeBackup(dumpfile)
+                        writeBackup(dumpfile)
 			os.Exit(0)
 		}
 	}()
@@ -355,7 +327,7 @@ func main() {
 	for input != "Q" {
 		fmt.Scan(&input)
 		fmt.Println("Qutting based on command from stdin: ", input)
-        //              writeBackup(backupFile)
+                writeBackup(dumpfile)
 	}
 	os.Exit(0)
 }
