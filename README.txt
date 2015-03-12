@@ -18,3 +18,10 @@ a file or os.Args[1] for the json configuration
 
 WARNING: supervisor will not work if the json configuration
 is not properly configured.
+
+Final Note:
+If you run supervisor and hit "COMMAND + c" it will
+kill all the processes in the process group (all
+controlled servers) and if you hit "Q + ENTER" it
+will only kill the supervisor and the other processes
+will survive
