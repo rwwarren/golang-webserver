@@ -16,27 +16,27 @@ package main
 
 import (
 	log "../../seelog-master/"
-	"os/exec"
-	"strings"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"os"
-	"strconv"
-	"sync"
 	"io/ioutil"
+	"os"
+	"os/exec"
 	"path/filepath"
-        "time"
-        "syscall"
-        //"os/signal"
+	"strconv"
+	"strings"
+	"sync"
+	"syscall"
+	"time"
+	//"os/signal"
 )
 
 // Stores the port information
 var concurrentMap struct {
 	sync.RWMutex
 	portMap []Ports
-        //TODO use size for something
-	size    int
+	//TODO use size for something
+	size int
 }
 
 //
@@ -47,13 +47,13 @@ type Ports struct {
 
 //
 type configs struct {
-	Command []string
-	Output  string
-	Error   string
-        PID     int
-        CurrentPort string
-        //TODO PID, PORT
-        //TODO output all map to JSON then reload it
+	Command     []string
+	Output      string
+	Error       string
+	PID         int
+	CurrentPort string
+	//TODO PID, PORT
+	//TODO output all map to JSON then reload it
 }
 
 // Initalizes the concurrent map with the port list
@@ -67,102 +67,102 @@ func init() {
 
 //
 func killBackups(killProcesses *configs) {
-      if killProcesses.PID != 0{
-        killProcess(killProcesses.PID)
-        killProcesses.PID = 0
-      }
+	if killProcesses.PID != 0 {
+		killProcess(killProcesses.PID)
+		killProcesses.PID = 0
+	}
 }
 
 //
-func killProcess(pid int){
-  process, _ := os.FindProcess(pid)
-  process.Kill()
-  process.Wait()
+func killProcess(pid int) {
+	process, _ := os.FindProcess(pid)
+	process.Kill()
+	process.Wait()
 }
 
 //
 func checkAlive(pid int) bool {
-  if pid == 0 {
-    return false
-  }
-  process, _ := os.FindProcess(pid)
-  //TODO get process STAT
-  newerr := process.Signal(syscall.Signal(0))
-  fmt.Println("newerr")
-  fmt.Println(newerr)
-    myPid := fmt.Sprintf("%v", pid)
-    cmd, err := exec.Command("/bin/ps", "axo pid,stat | grep", myPid).Output()
-    if err != nil {
-      fmt.Printf("exit status???? %s\n",err)
-    }
-    fmt.Printf("CMD output %s \n",cmd)
-    n := len(cmd)
-    command := string(cmd[:n])
-    return !strings.Contains(command, "Z")
+	if pid == 0 {
+		return false
+	}
+	process, _ := os.FindProcess(pid)
+	//TODO get process STAT
+	newerr := process.Signal(syscall.Signal(0))
+	fmt.Println("newerr")
+	fmt.Println(newerr)
+	myPid := fmt.Sprintf("%v", pid)
+	cmd, err := exec.Command("/bin/ps", "axo pid,stat | grep", myPid).Output()
+	if err != nil {
+		fmt.Printf("exit status???? %s\n", err)
+	}
+	fmt.Printf("CMD output %s \n", cmd)
+	n := len(cmd)
+	command := string(cmd[:n])
+	return !strings.Contains(command, "Z")
 }
 
 //
-func launch(currentConfig *configs, thepath string){
+func launch(currentConfig *configs, thepath string) {
 	size := len(currentConfig.Command) - 1
 	args := make([]string, size)
-        var foundPort string
+	var foundPort string
 	for i := 0; i < size; i++ {
-		currentCommand := currentConfig.Command[i + 1]
+		currentCommand := currentConfig.Command[i+1]
 		if strings.Contains(currentCommand, "{{port}}") {
 			foundPort = getFreePort()
-                        log.Infof("Starting on port: %s", foundPort)
+			log.Infof("Starting on port: %s", foundPort)
 			currentCommand = strings.Replace(currentCommand, "{{port}}", foundPort, 1)
 		} else if strings.Contains(currentCommand, "--port=") {
-                  found := strings.SplitAfter(currentCommand, "--port=")
-                  foundPort = found[1]
-                  concurrentMap.Lock()
-	          for i := range concurrentMap.portMap {
-                    thePort, _ := strconv.Atoi(foundPort)
-                    concurrentMap.portMap[i].PortNumber = thePort
-                    concurrentMap.portMap[i].IsUsed = true
-                    log.Infof("Marking port as used: %s", foundPort)
-                    break
-                  }
-                  concurrentMap.Unlock()
-                }
+			found := strings.SplitAfter(currentCommand, "--port=")
+			foundPort = found[1]
+			concurrentMap.Lock()
+			for i := range concurrentMap.portMap {
+				thePort, _ := strconv.Atoi(foundPort)
+				concurrentMap.portMap[i].PortNumber = thePort
+				concurrentMap.portMap[i].IsUsed = true
+				log.Infof("Marking port as used: %s", foundPort)
+				break
+			}
+			concurrentMap.Unlock()
+		}
 		args[i] = currentCommand
 	}
-        program := fmt.Sprintf("%s", currentConfig.Command[0])
+	program := fmt.Sprintf("%s", currentConfig.Command[0])
 	cmd := exec.Command(program, args...)
-        outfile, outerr := os.Create(currentConfig.Output)
-        if outerr != nil {
-            panic(outerr)
-        }
-        defer outfile.Close()
-        errfile, errerr := os.Create(currentConfig.Error)
-        if errerr != nil {
-            panic(errerr)
-        }
-        defer errfile.Close()
-        //TODO send output to a command line output
-        cmd.Stdout = outfile
-        cmd.Stderr = errfile
+	outfile, outerr := os.Create(currentConfig.Output)
+	if outerr != nil {
+		panic(outerr)
+	}
+	defer outfile.Close()
+	errfile, errerr := os.Create(currentConfig.Error)
+	if errerr != nil {
+		panic(errerr)
+	}
+	defer errfile.Close()
+	//TODO send output to a command line output
+	cmd.Stdout = outfile
+	cmd.Stderr = errfile
 	fmt.Println(cmd)
 	err := cmd.Start()
 	fmt.Printf("ProcessID: %v\n", cmd.Process.Pid)
 	if err != nil {
 		log.Critical(err)
 	}
-        currentConfig.PID = cmd.Process.Pid
-        currentConfig.CurrentPort = foundPort
+	currentConfig.PID = cmd.Process.Pid
+	currentConfig.CurrentPort = foundPort
 }
 
 //
 func supervise(currentConfig *configs, thepath string, checkoutInterval int) {
-        for {
-            alive := checkAlive(currentConfig.PID)
-            fmt.Printf("ProcessID Checking: %v\n", currentConfig.PID)
-            if alive {
-              time.Sleep(time.Duration(checkoutInterval) * time.Second)
-            } else {
-                launch(currentConfig, thepath)
-            }
-        }
+	for {
+		alive := checkAlive(currentConfig.PID)
+		fmt.Printf("ProcessID Checking: %v\n", currentConfig.PID)
+		if alive {
+			time.Sleep(time.Duration(checkoutInterval) * time.Second)
+		} else {
+			launch(currentConfig, thepath)
+		}
+	}
 }
 
 // Gets the next free port for the next server to load
@@ -173,9 +173,9 @@ func getFreePort() string {
 		if !concurrentMap.portMap[i].IsUsed {
 			concurrentMap.portMap[i].IsUsed = true
 			portNum = concurrentMap.portMap[i].PortNumber
-	                concurrentMap.Unlock()
-                        log.Infof("portnum %v . port string %s \n", portNum, strconv.Itoa(portNum))
-                        return strconv.Itoa(portNum)
+			concurrentMap.Unlock()
+			log.Infof("portnum %v . port string %s \n", portNum, strconv.Itoa(portNum))
+			return strconv.Itoa(portNum)
 		}
 	}
 	concurrentMap.Unlock()
@@ -227,9 +227,9 @@ func main() {
 	logFile := flag.String("log", "logConfig", "This is the logger configuration file")
 	portRange := flag.String("port-range", "8080-9090", "This is the port range")
 	dumpLoc := flag.String("dumpfile", "backup.bak", "This is the dumpfile")
-        //TODO below change to pipe in from command line
+	//TODO below change to pipe in from command line
 	loadFile := flag.String("loadfile", "config.json", "This is the dumpfile")
-        //
+	//
 	checkout := flag.Int("checkpoint-interval", 2, "This is the checkpoint interval")
 	flag.Parse()
 	logFileName := fmt.Sprintf("etc/%s.xml", *logFile)
@@ -258,32 +258,32 @@ func main() {
 	buildPorts(portsList)
 	loadedString := getLoadFile(loadingFile)
 	supervisionList := getSupervisionList(loadedString)
-        //fmt.Println("supervision list")
-        //fmt.Println(supervisionList)
+	//fmt.Println("supervision list")
+	//fmt.Println(supervisionList)
 
-        //TODO remove this?
+	//TODO remove this?
 	filename := os.Args[0]
 	filedirectory := filepath.Dir(filename)
 	thepath, err := filepath.Abs(filedirectory)
 	if err != nil {
 		log.Critical(err)
 	}
-        loadedFile := getLoadFile(dumpfile)
-        additionalBackup := getSupervisionList(loadedFile)
-        for key, _ := range additionalBackup {
-          killBackups(&additionalBackup[key])
-        }
-        totalSize := (len(additionalBackup) + len(supervisionList))
-        newList := make([]configs, len(supervisionList), totalSize)
-        copy(newList, supervisionList)
-        supervisionList = newList
-        supervisionList = append(supervisionList, additionalBackup...)
+	loadedFile := getLoadFile(dumpfile)
+	additionalBackup := getSupervisionList(loadedFile)
+	for key, _ := range additionalBackup {
+		killBackups(&additionalBackup[key])
+	}
+	totalSize := (len(additionalBackup) + len(supervisionList))
+	newList := make([]configs, len(supervisionList), totalSize)
+	copy(newList, supervisionList)
+	supervisionList = newList
+	supervisionList = append(supervisionList, additionalBackup...)
 	for key, _ := range supervisionList {
 		go supervise(&supervisionList[key], thepath, checkoutInterval)
 	}
-        log.Info("Loading the servers")
-        //go monitor()
-        //TODO channel to keep servers alive
+	log.Info("Loading the servers")
+	//go monitor()
+	//TODO channel to keep servers alive
 	//signalChan := make(chan os.Signal, 1)
 	//signal.Notify(signalChan, os.Interrupt)
 	//go func() {
@@ -294,15 +294,15 @@ func main() {
 	//		//os.Exit(1)
 	//	}
 	//}()
-        //TODO remove wait group??? or only have it run the first time
-        //wg.Wait()
-        log.Info("Done! Loaded the servers")
-        var i int
-        //TODO use this to quit
-        for i != 1 {
-              fmt.Scan(&i)
-              fmt.Println("read number", i, "from stdin")
-              //cleanup
-        }
-        os.Exit(0)
+	//TODO remove wait group??? or only have it run the first time
+	//wg.Wait()
+	log.Info("Done! Loaded the servers")
+	var i int
+	//TODO use this to quit
+	for i != 1 {
+		fmt.Scan(&i)
+		fmt.Println("read number", i, "from stdin")
+		//cleanup
+	}
+	os.Exit(0)
 }
