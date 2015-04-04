@@ -1,10 +1,17 @@
-this is the readme
+This is a golang webserver built for a class.
 
-tarball command reminder
-tar czf timeserver.tar.gz ./css490
+There are 6 components of the server:
+  1. Timeserver: This is the frontend server that has a couple different pages, including one that shows you the current time.
+  2. Authserver: This connects to the timeserver to track logging in and out of users.
+  3. Counter: This is a counter that allows concorrent access
+  4. Loadgen: This creates a load on the timeserver and authserver
+  5. Monitor: This is a monitor that checks servers at an interval for a runtime
+  6. Supervisor: This makes starts and tracks the status of servers to entire there is no downtime
 
 
-For assignment 7:
+
+
+
 
 compile "timeserver" and "authserver"
 using go build (so the executable is in the
